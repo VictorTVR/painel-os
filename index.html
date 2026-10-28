@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OS em aberto – Pós-venda</title>
+<style>
+:root{--bg:#eef1f4;--ink:#16222d;--mut:#5d6c7a;--card:#fff;--line:#d3dae1;--verde:#2e9e5b;--amarelo:#e6ac12;--vermelho:#d3382d;--cinza:#9aa7b3;--acc:#0d5c75}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 "Bahnschrift","Segoe UI",system-ui,sans-serif}
+header,main,#graf{max-width:1100px;margin:auto;padding-left:16px;padding-right:16px}
+header{padding-top:18px;padding-bottom:8px}
+.top{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+h1{margin:0;font-size:26px;font-weight:600}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;border:0;border-radius:6px;padding:9px 14px;background:var(--acc);color:#fff;cursor:pointer}
+button.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+:focus-visible{outline:3px solid #7fb8c9;outline-offset:2px}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.s{background:var(--card);color:var(--ink);text-align:left;border-radius:8px;padding:10px 12px;border-top:5px solid var(--cinza);cursor:pointer}.s.active{box-shadow:0 0 0 3px var(--acc)}
+.s b{font-size:30px;font-weight:600;display:block;line-height:1.1}
+.s span{font-size:13px;color:var(--mut)}
+.s.verde{border-color:var(--verde)}.s.amarelo{border-color:var(--amarelo)}.s.vermelho{border-color:var(--vermelho)}
+.flt{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+.flt label,dialog label{display:flex;flex-direction:column;font-size:13px;color:var(--mut);gap:3px}
+select,input[type=text],input[type=date],textarea{font:inherit;padding:8px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+main{padding-top:8px;padding-bottom:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;align-items:start}
+.blk{background:var(--card);border-radius:10px;border-left:10px solid var(--cinza);overflow:hidden}
+.blk.verde{border-color:var(--verde)}.blk.amarelo{border-color:var(--amarelo)}.blk.vermelho{border-color:var(--vermelho)}
+.blk.zero{opacity:.6}
+.blk.open{grid-column:1/-1}
+.head{all:unset;box-sizing:border-box;display:flex;width:100%;padding:14px;gap:10px;align-items:center;cursor:pointer}
+div.head{cursor:default}
+.nm{font-size:19px;font-weight:600;flex:1}
+.ct{font-size:14px;color:var(--mut)}
+.dots{display:flex;gap:4px}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--cinza)}
+.dot.verde{background:var(--verde)}.dot.amarelo{background:var(--amarelo)}.dot.vermelho{background:var(--vermelho)}
+.list{display:none;padding:0 12px 12px;gap:10px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.blk.open .list{display:grid}
+.os{border:1px solid var(--line);border-left:6px solid var(--cinza);border-radius:8px;padding:10px 12px;background:#fafbfc;display:flex;flex-direction:column;gap:6px}
+.os.verde{border-left-color:var(--verde)}.os.amarelo{border-left-color:var(--amarelo)}.os.vermelho{border-left-color:var(--vermelho)}
+.os.concluido{background:#f1f3f5}
+.l1{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.l1 b{font-size:17px}
+.d{font-size:14px;font-weight:600}
+.os.verde .d{color:var(--verde)}.os.amarelo .d{color:#9a7000}.os.vermelho .d{color:var(--vermelho)}
+.os p{margin:0}
+.fim{font-size:14px;background:#e4eaef;border-radius:6px;padding:8px}
+dl{display:flex;flex-wrap:wrap;gap:4px 16px;margin:0}
+dt{font-size:12px;color:var(--mut)}dd{margin:0;font-size:14px;overflow-wrap:anywhere}
+.vazio{grid-column:1/-1;text-align:center;color:var(--mut);padding:30px 0}
+#graf{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;padding-bottom:40px}
+.gc{background:var(--card);border-radius:10px;padding:14px}
+.gc h2{margin:0 0 8px;font-size:18px}
+.gc svg{width:100%;max-width:360px;display:block;margin:auto}
+.leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;margin-top:8px}
+.leg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px}
+.wk{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:14px}
+.wk button{padding:4px 12px}
+dialog{border:0;border-radius:12px;padding:18px;width:min(1000px,96vw);max-height:92vh;color:var(--ink)}
+dialog::backdrop{background:rgba(10,20,30,.5)}
+dialog h2{margin:0 0 8px;font-size:20px}
+.tecs{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin:8px 0}
+.tecs label{flex-direction:row;align-items:center;gap:8px;font-size:16px;color:var(--ink)}
+.chip{background:#e4eaef;border-radius:20px;padding:4px 6px 4px 12px;font-size:15px}
+.chip button{padding:0 8px;background:none;color:var(--vermelho)}
+textarea{width:100%}
+.thumbs{display:flex;gap:6px;overflow-x:auto;margin:8px 0}
+.thumbs img{height:70px;border:1px solid var(--line);border-radius:4px}
+.tw{overflow-x:auto;margin:8px 0}
+table{border-collapse:collapse;width:100%;min-width:760px}
+th{font-size:12px;text-align:left;color:var(--mut);padding:4px}
+td{padding:3px}
+td input{width:100%;font:inherit;font-size:14px;padding:6px;border:1px solid var(--line);border-radius:4px}
+.auto{flex-direction:row!important;align-items:flex-start;gap:8px;background:#fdf3d6;border-radius:6px;padding:8px;color:var(--ink)!important;font-size:14px!important}
+.bar{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;align-items:center;margin-top:10px}
+.err{color:var(--vermelho);margin:6px 0 0}
+.ob{font-size:14px;resize:vertical}
+.tot{display:flex;align-items:baseline;gap:14px;margin-top:14px;background:var(--acc);color:#fff;border-radius:10px;padding:12px 18px}.tot b{font-size:52px;font-weight:800;line-height:1}.tot span{font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.02em}
+.sync{font-size:13px;color:var(--mut);margin-top:6px}
+.rf{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}.rf fieldset{border:1px solid var(--line);border-radius:8px;margin:0;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0}.rf legend{font-size:13px;color:var(--mut)}
+.ck{flex-direction:row!important;align-items:center;gap:6px!important;font-size:15px!important;color:var(--ink)!important}
+@media(max-width:520px){h1{font-size:22px}.s b{font-size:24px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1>OS em aberto</h1>
+    <div class="acts">
+      <button id="bImp">Importar imagens</button>
+      <button id="bRel" class="ghost">Relatório</button>
+      <button id="bTec" class="ghost">Técnicos</button>
+      <button id="bSync" class="ghost">Sincronizar</button>
+      <button id="bKey" class="ghost">Chave Gemini</button>
+    </div>
+  </div>
+  <div class="sync" id="sync"></div>
+  <div class="tot" aria-live="polite"><b id="totN">0</b><span>OS abertas</span></div>
+  <div class="sum" id="sum"></div>
+  <div class="flt">
+    <label>Situação<select id="fSit"><option value="pend">Pendentes</option><option value="conc">Concluídas</option><option value="todas">Todas</option></select></label>
+    <label>Técnico<select id="fTec"></select></label>
+  </div>
+</header>
+<main id="grid"></main>
+<section id="graf"></section>
+<input type="file" id="fIn" accept="image/*" multiple hidden>
+<dialog id="dlg"></dialog>
+
+<script>
+const KEY='osbyd.v1',KK='osbyd.gemini',KT='osbyd.tec',MODEL='gemini-2.5-flash';
+const chave=()=>localStorage.getItem(KK)||'';
+const GAR=['AutoBless','AlfaRodobus','MobiBrasil','MoveBuss','CampoBelo','TransWolf','Pessêgo','Express','TransPass','GatoPreto','SantaBrigda','SusanTour','KBPX'];
+const TEC0=['Victor Tavares','Mario','Alex','Yan','Danilo','José Carlos','Ricardo','Roberto','Alexon','Angel','Carlos','Fell','Yeferson','Alessandro','Fábrica'];
+const SEED=[];
+const ST={aguardando:'Aguardando',atendimento:'Em atendimento',concluido:'Concluído'};
+const SEV={vermelho:3,amarelo:2,verde:1,cinza:0};
+const PAL=['#0d5c75','#d3382d','#e6ac12','#2e9e5b','#7a4fb5','#e07a1f','#3a8fd6','#b5427a','#6b8e23','#8c6d46','#2bb3a3','#5d6c7a','#c24a1a','#9b59b6'];
+const $=s=>document.querySelector(s), dlg=$('#dlg');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const pad=n=>String(n).padStart(2,'0');
+const fm=d=>pad(d.getDate())+'/'+pad(d.getMonth()+1);
+let data,tecs,abertos=new Set(),ano=new Date().getFullYear(),corSel=null;
+try{data=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!Array.isArray(data))data=SEED;
+try{tecs=JSON.parse(localStorage.getItem(KT))}catch(e){}
+if(!Array.isArray(tecs))tecs=TEC0;
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));localStorage.setItem(KT,JSON.stringify(tecs))}catch(e){}push()};
+const pend=o=>o.status!=='concluido';
+function garagem(c){const k=norm(c);if(!k)return'Sem cliente';return GAR.find(g=>{const n=norm(g);return k.includes(n)||(k.length>2&&n.includes(k))})||String(c).trim()}
+function pd(s){const m=/(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s||'');return m?new Date(+m[3],m[2]-1,+m[1]):null}
+// dias úteis (seg–sex) desde a abertura, igual à coluna "Dias aberta" do relatório
+function dias(o){const d=pd(o.abertura);if(!d)return null;const t=new Date();t.setHours(0,0,0,0);let n=0;const c=new Date(d);
+  for(;;){c.setDate(c.getDate()+1);if(c>t)break;const w=c.getDay();if(w&&w<6)n++}return n}
+const cor=n=>n==null?'cinza':n<=2?'verde':n<=5?'amarelo':'vermelho';
+const txt=n=>n==null?'sem data':n===1?'1 dia útil':n+' dias úteis';
+function fillTec(){const v=$('#fTec').value;$('#fTec').innerHTML='<option value="">Todos</option>'+tecs.map(t=>`<option ${t===v?'selected':''}>${esc(t)}</option>`).join('')}
+
+function render(){
+  const sit=$('#fSit').value,tec=$('#fTec').value,filtrando=tec||sit==='conc'||corSel;
+  const cnt={verde:0,amarelo:0,vermelho:0},g={},tot={};let abertas=0;
+  GAR.forEach(n=>g[n]=[]);
+  data.forEach(o=>{
+    const n=dias(o),c=cor(n),fin=!pend(o),k=garagem(o.cliente);
+    if(!fin){abertas++;if(cnt[c]!==undefined)cnt[c]++;tot[k]=(tot[k]||0)+1}
+    if((corSel?(fin||c!==corSel):((sit==='pend'&&fin)||(sit==='conc'&&!fin)))||(tec&&!(o.tecnicos||[]).includes(tec)))return;
+    (g[k]??=[]).push({o,n,c,fin});
+  });
+  $('#sum').innerHTML=[['vermelho','mais de 5 dias úteis'],['amarelo','de 3 a 5 dias úteis'],['verde','até 2 dias úteis']]
+    .map(([k,l])=>`<button class="s ${k} ${corSel===k?'active':''}" data-cor="${k}" aria-pressed="${corSel===k}"><b>${cnt[k]}</b><span>${l}</span></button>`).join('');
+  const blocks=Object.entries(g).filter(([,a])=>a.length||!filtrando).map(([nome,arr])=>{
+    arr.sort((a,b)=>a.fin-b.fin||(b.n??-1)-(a.n??-1));
+    const ab=arr.filter(x=>!x.fin);
+    return{nome,arr,ab,worst:ab.reduce((w,x)=>SEV[x.c]>SEV[w]?x.c:w,'cinza')};
+  }).sort((a,b)=>SEV[b.worst]-SEV[a.worst]||b.arr.length-a.arr.length);
+  $('#grid').innerHTML=blocks.map(b=>!b.arr.length?
+  `<section class="blk zero"><div class="head"><span class="nm">${esc(b.nome)}</span><span class="ct">0 OS</span></div></section>`:`
+  <section class="blk ${b.worst} ${corSel||abertos.has(b.nome)?'open':''}">
+    <button class="head" data-g="${esc(b.nome)}" aria-expanded="${abertos.has(b.nome)}">
+      <span class="nm">${esc(b.nome)}</span>
+      <span class="dots">${b.ab.map(x=>`<i class="dot ${x.c}"></i>`).join('')}</span>
+      <span class="ct">${b.arr.length} OS</span>
+    </button>
+    <div class="list">${b.arr.map(({o,n,c,fin})=>`
+      <article class="os ${fin?'concluido cinza':c}">
+        <div class="l1"><b>${esc(o.os)}</b><span class="d">${fin?'Concluída':txt(n)}</span></div>
+        <p>${esc(o.desc)}</p>
+        <dl><div><dt>Frota</dt><dd>${esc(o.frota)}</dd></div><div><dt>Km</dt><dd>${esc(o.km)||'–'}</dd></div><div><dt>Aberta em</dt><dd>${esc(o.abertura)}</dd></div><div><dt>VIN</dt><dd>${esc(o.vin)}</dd></div></dl>
+        ${fin?`<div class="fim"><b>Técnicos:</b> ${esc((o.tecnicos||[]).join(', ')||'–')}<br><b>Obs.:</b> ${esc(o.obs)||'–'}</div><button class="ghost" data-fin="${esc(o.os)}">Editar finalização</button>`:''}
+        ${fin?'':`<textarea class="ob" data-ob="${esc(o.os)}" rows="2" placeholder="Observação (ex.: aguardando peça)" aria-label="Observação da ${esc(o.os)}">${esc(o.obs)}</textarea>`}
+        <select data-os="${esc(o.os)}" aria-label="Status da ${esc(o.os)}">${Object.entries(ST).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}</select>
+      </article>`).join('')}</div>
+  </section>`).join('')||'<p class="vazio">Nada para mostrar com estes filtros.</p>';
+  $('#totN').textContent=abertas;graficos(tot);
+}
+
+// ---------- gráficos ----------
+function graficos(tot){
+  const nomes=[...new Set([...GAR,...data.map(o=>garagem(o.cliente))])];
+  const it=nomes.map((n,i)=>({n,v:tot[n]||0,c:PAL[i%PAL.length]})).filter(x=>x.v);
+  const soma=it.reduce((s,x)=>s+x.v,0);let a=-Math.PI/2,p='';
+  const P=t=>[90+80*Math.cos(t),90+80*Math.sin(t)];
+  const tx=(X,Y,v)=>`<text x="${X}" y="${Y}" text-anchor="middle" font-size="15" font-weight="700" fill="#16222d" stroke="#fff" stroke-width="3" paint-order="stroke">${v}</text>`;
+  it.forEach(x=>{const f=x.v/soma;
+    if(f>=1){p+=`<circle cx="90" cy="90" r="80" fill="${x.c}"/>`+tx(90,96,x.v);return}
+    const b=a+f*2*Math.PI,[x1,y1]=P(a),[x2,y2]=P(b);
+    p+=`<path d="M90 90L${x1} ${y1}A80 80 0 ${f>.5?1:0} 1 ${x2} ${y2}Z" fill="${x.c}" stroke="#fff" stroke-width="2"/>`;if(f>=.04){const m=(a+b)/2;p+=tx(90+52*Math.cos(m),96+52*Math.sin(m),x.v)}a=b});
+  const MES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const vs=MES.map((_,m)=>data.filter(o=>{const d=pd(o.abertura);return d&&d.getFullYear()===ano&&d.getMonth()===m}).length),mx=Math.max(1,...vs);
+  const bars=vs.map((v,i)=>{const h=v*130/mx,x=10+i*27.5;
+    return`<rect x="${x}" y="${160-h}" width="20" height="${h}" rx="2" fill="#0d5c75"/><text x="${x+10}" y="${154-h}" text-anchor="middle" font-size="12" font-weight="600" fill="#16222d">${v||''}</text><text x="${x+10}" y="178" text-anchor="middle" font-size="10" fill="#5d6c7a">${MES[i]}</text>`}).join('');
+  $('#graf').innerHTML=`
+  <div class="gc"><h2>OS pendentes por garagem</h2>${soma?`<svg viewBox="0 0 180 180" role="img" aria-label="Pizza de OS por garagem">${p}</svg>
+    <div class="leg">${it.map(x=>`<span><i style="background:${x.c}"></i>${esc(x.n)}: ${x.v}</span>`).join('')}</div>`:'<p class="vazio">Sem OS pendentes.</p>'}</div>
+  <div class="gc"><h2>OS abertas por mês</h2>
+    <div class="wk"><button class="ghost" data-w="-1" aria-label="Ano anterior">‹</button><span>${ano}: <b>${vs.reduce((s,v)=>s+v,0)}</b> OS abertas</span><button class="ghost" data-w="1" aria-label="Próximo ano">›</button></div>
+    <svg viewBox="0 0 340 190" role="img" aria-label="Colunas de OS abertas por mês">${bars}<line x1="6" y1="160" x2="334" y2="160" stroke="#d3dae1"/></svg></div>`;
+}
+
+// ---------- eventos ----------
+$('#grid').addEventListener('click',e=>{
+  const h=e.target.closest('[data-g]');if(h){const k=h.dataset.g;abertos.has(k)?abertos.delete(k):abertos.add(k);render();return}
+  const f=e.target.closest('[data-fin]');if(f)finalizar(f.dataset.fin)});
+$('#grid').addEventListener('change',e=>{
+  const t=e.target.closest('textarea[data-ob]');
+  if(t){const o=data.find(x=>x.os===t.dataset.ob);if(o){o.obs=t.value.trim();save()}return}
+  const s=e.target.closest('select[data-os]');if(!s)return;
+  if(s.value==='concluido')return finalizar(s.dataset.os);
+  const o=data.find(x=>x.os===s.dataset.os);if(o){o.status=s.value;save();render()}});
+$('#graf').addEventListener('click',e=>{const b=e.target.closest('[data-w]');if(b){ano+=+b.dataset.w;render()}});
+$('#sum').addEventListener('click',e=>{const b=e.target.closest('[data-cor]');if(b){corSel=corSel===b.dataset.cor?null:b.dataset.cor;render()}});
+$('#fSit').onchange=render;
+$('#fTec').onchange=()=>{if($('#fTec').value&&$('#fSit').value==='pend')$('#fSit').value='todas';render()};
+dlg.addEventListener('close',render);
+
+function finalizar(n){
+  const o=data.find(x=>x.os===n),sel=o.tecnicos||[];
+  dlg.innerHTML=`<h2>Finalizar ${esc(n)}</h2><p>Quem fez esta OS? Marque um ou mais técnicos.</p>
+  <div class="tecs">${tecs.map(t=>`<label><input type="checkbox" value="${esc(t)}" ${sel.includes(t)?'checked':''}> ${esc(t)}</label>`).join('')}</div>
+  <label>Observação<textarea id="obs" rows="3">${esc(o.obs)}</textarea></label><p class="err" id="er"></p>
+  <div class="bar"><button class="ghost" id="bC">Cancelar</button><button id="bOk">Finalizar</button></div>`;
+  dlg.showModal();
+  $('#bC').onclick=()=>dlg.close();
+  $('#bOk').onclick=()=>{
+    const t=[...dlg.querySelectorAll('.tecs input:checked')].map(i=>i.value);
+    if(!t.length){$('#er').textContent='Marque pelo menos um técnico.';return}
+    Object.assign(o,{status:'concluido',tecnicos:t,obs:$('#obs').value.trim()});save();dlg.close()};
+}
+
+$('#bTec').onclick=()=>{
+  dlg.innerHTML=`<h2>Técnicos</h2><div class="tecs" id="tl"></div>
+  <div class="bar"><input type="text" id="nt" placeholder="Novo técnico"><button id="bAd">Adicionar</button><button class="ghost" id="bX">Fechar</button></div>`;
+  const draw=()=>{$('#tl').innerHTML=tecs.map((t,i)=>`<span class="chip">${esc(t)} <button data-r="${i}" aria-label="Remover ${esc(t)}">×</button></span>`).join('');fillTec()};
+  $('#tl').onclick=e=>{const b=e.target.closest('[data-r]');if(b){tecs.splice(+b.dataset.r,1);save();draw()}};
+  $('#bAd').onclick=()=>{const v=$('#nt').value.trim();if(v&&!tecs.includes(v)){tecs.push(v);save();$('#nt').value='';draw()}};
+  $('#bX').onclick=()=>dlg.close();
+  draw();dlg.showModal();
+};
+
+// ---------- Importação por imagem (Gemini) ----------
+const PROMPT='Esta imagem é uma tabela de ordens de serviço. Extraia TODAS as linhas. Responda somente com um array JSON de objetos com as chaves: os, cliente, frota, km, abertura (formato DD/MM/AAAA), vin (17 caracteres, junte as quebras de linha), descricao (apenas o texto em português, junte as quebras de linha). Use null quando o campo estiver vazio ou escrito "null". Não invente dados.';
+$('#bKey').onclick=()=>{const k=prompt('Cole sua chave da API do Gemini (aistudio.google.com/apikey):',localStorage.getItem(KK)||'');if(k!==null){localStorage.setItem(KK,k.trim());push()}};
+$('#bImp').onclick=()=>{if(!chave()){$('#bKey').click();if(!chave())return}$('#fIn').click()};
+$('#fIn').onchange=e=>{const f=[...e.target.files];e.target.value='';if(f.length)importar(f)};
+const b64=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]);r.onerror=no;r.readAsDataURL(f)});
+async function lerImagem(f){
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${chave()}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[{text:PROMPT},{inline_data:{mime_type:f.type||'image/jpeg',data:await b64(f)}}]}],generationConfig:{responseMimeType:'application/json',temperature:0}})});
+  const j=await r.json();
+  if(!r.ok)throw new Error(j.error?.message||('Erro '+r.status));
+  return JSON.parse(j.candidates[0].content.parts.map(p=>p.text||'').join('').replace(/```json|```/g,'').trim());
+}
+async function importar(files){
+  dlg.innerHTML='<h2>Lendo imagens…</h2><p id="log"></p>';dlg.showModal();
+  const rows=[],urls=[];
+  for(let i=0;i<files.length;i++){
+    $('#log').textContent=`Imagem ${i+1} de ${files.length}`;urls.push(URL.createObjectURL(files[i]));
+    try{(await lerImagem(files[i])).forEach(x=>rows.push({os:String(x.os||'').trim(),cliente:x.cliente||'',frota:x.frota||'',km:x.km||'',abertura:x.abertura||'',vin:(x.vin||'').replace(/\s/g,'').toUpperCase(),desc:x.descricao||x.desc||''}))}
+    catch(err){$('#log').insertAdjacentHTML('afterend',`<p class="err">Imagem ${i+1}: ${esc(err.message)}</p>`)}
+  }
+  conferir(rows,urls);
+}
+const COLS=[['os','OS'],['cliente','Cliente'],['frota','Frota'],['km','Km'],['abertura','Abertura'],['vin','VIN'],['desc','Descrição']];
+function conferir(rows,urls){
+  const falt=data.filter(o=>pend(o)&&!rows.some(r=>r.os===o.os));
+  dlg.innerHTML=`<h2>Conferir antes de salvar</h2>
+  <div class="thumbs">${urls.map(u=>`<a href="${u}" target="_blank"><img src="${u}" alt="Imagem do relatório"></a>`).join('')}</div>
+  <div class="tw"><table><thead><tr>${COLS.map(c=>`<th>${c[1]}</th>`).join('')}<th></th></tr></thead>
+  <tbody>${rows.map(r=>`<tr>${COLS.map(([k])=>`<td><input type="text" data-k="${k}" value="${esc(r[k])}"></td>`).join('')}<td><button class="ghost" data-del aria-label="Remover linha">×</button></td></tr>`).join('')}</tbody></table></div>
+  ${rows.length&&falt.length?`<label class="auto"><input type="checkbox" id="auto" checked><span>Fechar automaticamente ${falt.length} OS pendentes que não aparecem neste relatório: ${esc(falt.map(o=>o.os).join(', '))}. Desmarque se você importou só parte do relatório.</span></label>`:''}
+  <div class="bar"><button class="ghost" id="bCan">Cancelar</button><button id="bSave">Salvar</button></div>`;
+  dlg.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>b.closest('tr').remove());
+  $('#bCan').onclick=()=>dlg.close();
+  $('#bSave').onclick=()=>{
+    const nums=new Set();
+    dlg.querySelectorAll('tbody tr').forEach(tr=>{
+      const r={};tr.querySelectorAll('input').forEach(i=>r[i.dataset.k]=i.value.trim());
+      if(!r.os)return;nums.add(r.os);
+      const ex=data.find(o=>o.os===r.os);
+      ex?Object.assign(ex,r):data.push({...r,status:'aguardando',tecnicos:[],obs:''});
+    });
+    if($('#auto')?.checked){const h=new Date().toLocaleDateString('pt-BR');
+      data.forEach(o=>{if(pend(o)&&!nums.has(o.os)){o.status='concluido';o.obs=(o.obs?o.obs+' | ':'')+'Fechado automaticamente em '+h}})}
+    save();dlg.close();
+  };
+}
+// ---------- relatório personalizável ----------
+const RC=[['os','OS',o=>o.os],['gar','Garagem',o=>garagem(o.cliente)],['frota','Frota',o=>o.frota],['km','Km',o=>o.km],['ab','Abertura',o=>o.abertura],['dias','Dias úteis',o=>dias(o)??''],['pri','Prioridade',o=>pend(o)?cor(dias(o)):'concluída'],['vin','VIN',o=>o.vin],['desc','Descrição',o=>o.desc],['st','Status',o=>ST[o.status]||o.status],['tec','Técnicos',o=>(o.tecnicos||[]).join(', ')],['obs','Observação',o=>o.obs]];
+$('#bRel').onclick=()=>{
+  const gars=[...new Set([...GAR,...data.map(o=>garagem(o.cliente))])];
+  const ck=(n,v,l)=>`<label class="ck"><input type="checkbox" name="${n}" value="${esc(v)}" checked> ${esc(l)}</label>`;
+  dlg.innerHTML=`<h2>Relatório personalizado</h2><div class="rf">
+  <fieldset><legend>Abertura entre</legend><label>De<input type="date" id="rDe"></label><label>Até<input type="date" id="rAte"></label></fieldset>
+  <fieldset><legend>Status</legend>${Object.entries(ST).map(([k,v])=>ck('st',k,v)).join('')}</fieldset>
+  <fieldset><legend>Prioridade (das pendentes)</legend>${['verde','amarelo','vermelho'].map(k=>ck('pri',k,k[0].toUpperCase()+k.slice(1))).join('')}</fieldset>
+  <fieldset><legend>Técnico e busca</legend><label>Técnico<select id="rTec"><option value="">Qualquer</option>${tecs.map(t=>`<option>${esc(t)}</option>`).join('')}</select></label><label>Buscar texto<input type="text" id="rQ" placeholder="OS, frota, VIN, descrição, obs."></label></fieldset>
+  <fieldset><legend>Garagens</legend>${gars.map(g=>ck('gar',g,g)).join('')}</fieldset>
+  <fieldset><legend>Colunas do arquivo</legend>${RC.map(c=>ck('col',c[0],c[1])).join('')}</fieldset></div>
+  <p id="rN"></p><div class="bar"><button class="ghost" id="rX">Fechar</button><button id="rDl">Baixar CSV (abre no Excel)</button></div>`;
+  const v=n=>[...dlg.querySelectorAll(`input[name=${n}]:checked`)].map(i=>i.value);
+  const sel=()=>{
+    const st=v('st'),pr=v('pri'),ga=v('gar'),tc=$('#rTec').value,q=norm($('#rQ').value);
+    const de=$('#rDe').value?new Date($('#rDe').value+'T00:00'):null,ate=$('#rAte').value?new Date($('#rAte').value+'T00:00'):null;
+    return data.filter(o=>{const d=pd(o.abertura),c=cor(dias(o));
+      if(!st.includes(o.status)||!ga.includes(garagem(o.cliente)))return false;
+      if(pend(o)&&c!=='cinza'&&!pr.includes(c))return false;
+      if(tc&&!(o.tecnicos||[]).includes(tc))return false;
+      if((de||ate)&&(!d||(de&&d<de)||(ate&&d>ate)))return false;
+      if(q&&!norm([o.os,o.frota,o.vin,o.desc,o.obs,o.cliente].join(' ')).includes(q))return false;
+      return true});
+  };
+  const upd=()=>{$('#rN').textContent=sel().length+' OS no relatório'};
+  const rf=dlg.querySelector('.rf');rf.oninput=upd;rf.onchange=upd;upd();
+  $('#rX').onclick=()=>dlg.close();
+  $('#rDl').onclick=()=>{
+    const cols=RC.filter(c=>v('col').includes(c[0])),rows=sel();
+    if(!cols.length||!rows.length){$('#rN').textContent='Escolha ao menos uma coluna e uma OS.';return}
+    const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"';
+    const csv='\ufeff'+[cols.map(c=>q(c[1])),...rows.map(o=>cols.map(c=>q(c[2](o))))].map(r=>r.join(';')).join('\r\n');
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+    a.download='relatorio-os-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  };
+  dlg.showModal();
+};
+// ---------- sincronização (GitHub) ----------
+const KG='osbyd.gh';
+let gh=null,tPush=null;
+try{gh=JSON.parse(localStorage.getItem(KG))}catch(e){}
+const enc=s=>btoa(unescape(encodeURIComponent(s))),dec=s=>decodeURIComponent(escape(atob(s.replace(/\s/g,''))));
+const gUrl=()=>`https://api.github.com/repos/${gh.repo}/contents/dados.json`;
+const gHd=()=>({Authorization:'Bearer '+gh.token,Accept:'application/vnd.github+json'});
+function setSync(m,erro){const e=$('#sync');e.textContent=m;e.style.color=erro?'var(--vermelho)':'var(--mut)'}
+const hora=()=>'Sincronizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+async function pull(){
+  if(!gh)return;
+  try{
+    const r=await fetch(gUrl()+'?t='+Date.now(),{headers:gHd()});
+    if(r.status===404){if(data.length)push(true);else setSync('Conectado. Ainda sem dados no repositório.');return}
+    if(!r.ok)throw new Error(r.status===401?'token inválido':r.status===403?'sem permissão':'erro '+r.status);
+    const d=JSON.parse(dec((await r.json()).content));
+    if(!Array.isArray(d.data))throw new Error('arquivo de dados inválido');
+    if(!d.data.length&&data.length){push(true);return}
+    data=d.data;if(Array.isArray(d.tecs))tecs=d.tecs;
+    if(d.gk&&!localStorage.getItem(KK))localStorage.setItem(KK,d.gk);
+    localStorage.setItem(KEY,JSON.stringify(data));localStorage.setItem(KT,JSON.stringify(tecs));
+    fillTec();render();setSync(hora());
+  }catch(e){setSync('Sem sincronização: '+e.message,1)}
+}
+function push(agora){clearTimeout(tPush);tPush=setTimeout(enviar,agora===true?0:800)}
+async function enviar(){
+  if(!gh)return;
+  try{
+    const g=await fetch(gUrl()+'?t='+Date.now(),{headers:gHd()});
+    if(!g.ok&&g.status!==404)throw new Error('erro '+g.status);
+    const sha=g.ok?(await g.json()).sha:null;
+    const body={message:'Atualização do painel',content:enc(JSON.stringify({data,tecs,gk:localStorage.getItem(KK)||''}))};
+    if(sha)body.sha=sha;
+    const r=await fetch(gUrl(),{method:'PUT',headers:{...gHd(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok)throw new Error('erro '+r.status);
+    setSync(hora());
+  }catch(e){setSync('Sem sincronização: '+e.message,1)}
+}
+$('#bSync').onclick=()=>{
+  const r=prompt('Repositório PRIVADO dos dados, no formato usuario/repositorio:',gh?.repo||'');if(!r)return;
+  const k=prompt('Token do GitHub (permissão Contents: Read and write, só neste repositório):',gh?.token||'');if(!k)return;
+  gh={repo:r.trim(),token:k.trim()};localStorage.setItem(KG,JSON.stringify(gh));pull();
+};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!dlg.open)pull()});
+if(!gh)setSync('Sincronização desligada. Clique em “Sincronizar”.');
+fillTec();render();pull();
+</script>
+</body>
+</html>

@@ -90,6 +90,7 @@ td input{width:100%;font:inherit;font-size:14px;padding:6px;border:1px solid var
     <h1>OS em aberto</h1>
     <div class="acts">
       <button id="bImp">Importar imagens</button>
+      <button id="bPla">Importar planilha</button>
       <button id="bRel" class="ghost">Relatório</button>
       <button id="bTec" class="ghost">Técnicos</button>
       <button id="bSync" class="ghost">Sincronizar</button>
@@ -107,6 +108,7 @@ td input{width:100%;font:inherit;font-size:14px;padding:6px;border:1px solid var
 <main id="grid"></main>
 <section id="graf"></section>
 <input type="file" id="fIn" accept="image/*" multiple hidden>
+<input type="file" id="fPla" accept=".xlsx,.xls,.csv,.tsv,.txt" hidden>
 <dialog id="dlg"></dialog>
 
 <script>
@@ -305,6 +307,67 @@ function conferir(rows,urls){
       data.forEach(o=>{if(pend(o)&&!nums.has(o.os)){o.status='concluido';o.obs=(o.obs?o.obs+' | ':'')+'Fechado automaticamente em '+h}})}
     save();dlg.close();
   };
+}
+// ---------- Importação por planilha (modelo: planilha_base.xlsx) ----------
+$('#bPla').onclick=()=>$('#fPla').click();
+$('#fPla').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)planilha(f)};
+const carregaXlsx=()=>window.XLSX?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=ok;s.onerror=()=>no(new Error('não foi possível carregar o leitor de Excel (internet bloqueada?). Salve a planilha como CSV e tente de novo.'));document.head.appendChild(s)});
+function csvLinhas(txt){
+  const d=[';','\t',','].map(c=>[c,txt.split('\n')[0].split(c).length]).sort((a,b)=>b[1]-a[1])[0][0];
+  const L=[];let l=[],c='',q=false;
+  for(let i=0;i<txt.length;i++){const ch=txt[i];
+    if(q){if(ch==='"'){if(txt[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}
+    else if(ch==='"')q=true;
+    else if(ch===d){l.push(c);c=''}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&txt[i+1]==='\n')i++;l.push(c);c='';L.push(l);l=[]}
+    else c+=ch}
+  if(c||l.length){l.push(c);L.push(l)}
+  return L;
+}
+function dataBR(v){
+  if(typeof v==='number'&&v>20000&&v<80000){const d=new Date(Date.UTC(1899,11,30)+Math.round(v)*864e5);return pad(d.getUTCDate())+'/'+pad(d.getUTCMonth()+1)+'/'+d.getUTCFullYear()}
+  const s=String(v??'').trim();
+  let m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);if(m)return pad(+m[3])+'/'+pad(+m[2])+'/'+m[1];
+  m=/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/.exec(s);if(m)return pad(+m[1])+'/'+pad(+m[2])+'/'+(m[3].length===2?'20'+m[3]:m[3]);
+  return s;
+}
+const CAMPOS={os:/^os$|^ordem/,cliente:/^(cliente|garagem)/,frota:/^(frota|prefixo)/,km:/^km/,abertura:/^(ab|data)/,vin:/^(vin|chassi)/,desc:/^descri/};
+function linhasPlanilha(L){
+  const hi=L.slice(0,15).findIndex(r=>r.some(c=>norm(c)==='os')&&r.some(c=>/^(cliente|garagem)/.test(norm(c))));
+  if(hi<0)throw new Error('não achei o cabeçalho. A planilha precisa ter as colunas OS e Cliente (veja a planilha_base).');
+  const idx={};
+  L[hi].forEach((c,i)=>{const k=norm(c);for(const [n,re] of Object.entries(CAMPOS))if(idx[n]===undefined&&re.test(k))idx[n]=i});
+  const get=(r,k)=>{const v=idx[k]===undefined?'':r[idx[k]];return String(v??'').trim()==='null'?'':v};
+  const S=(r,k)=>String(get(r,k)??'').trim();
+  const rows=[];let ign=0;
+  L.slice(hi+1).forEach(r=>{
+    const os=S(r,'os');
+    if(!os||/exemplo/i.test(os)){if(r.some(c=>String(c).trim()))ign++;return}
+    rows.push({os,cliente:S(r,'cliente'),frota:S(r,'frota'),km:S(r,'km'),abertura:dataBR(get(r,'abertura')),vin:S(r,'vin').replace(/\s/g,'').toUpperCase(),desc:S(r,'desc')});
+  });
+  return{rows,ign};
+}
+async function planilha(f){
+  dlg.innerHTML='<h2>Lendo planilha…</h2>';dlg.showModal();
+  try{
+    let L;
+    if(/\.(csv|tsv|txt)$/i.test(f.name)){
+      const b=await f.arrayBuffer();let txt=new TextDecoder('utf-8').decode(b);
+      if(txt.includes('\ufffd'))txt=new TextDecoder('windows-1252').decode(b);
+      L=csvLinhas(txt.replace(/^\ufeff/,''));
+    }else{
+      await carregaXlsx();
+      const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
+      L=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames.find(n=>norm(n)==='os')||wb.SheetNames[0]],{header:1,raw:true,defval:''});
+    }
+    const {rows,ign}=linhasPlanilha(L);
+    if(!rows.length)throw new Error('nenhuma OS encontrada na planilha.');
+    conferir(rows,[]);
+    if(ign)dlg.querySelector('h2').insertAdjacentHTML('afterend',`<p>${ign} linha(s) de exemplo ou sem número de OS foram ignoradas.</p>`);
+  }catch(err){
+    dlg.innerHTML=`<h2>Não consegui ler a planilha</h2><p class="err">${esc(err.message)}</p><div class="bar"><button id="bX2">Fechar</button></div>`;
+    $('#bX2').onclick=()=>dlg.close();
+  }
 }
 // ---------- relatório personalizável ----------
 const RC=[['os','OS',o=>o.os],['gar','Garagem',o=>garagem(o.cliente)],['frota','Frota',o=>o.frota],['km','Km',o=>o.km],['ab','Abertura',o=>o.abertura],['dias','Dias úteis',o=>dias(o)??''],['pri','Prioridade',o=>pend(o)?cor(dias(o)):'concluída'],['vin','VIN',o=>o.vin],['desc','Descrição',o=>o.desc],['st','Status',o=>ST[o.status]||o.status],['tec','Técnicos',o=>(o.tecnicos||[]).join(', ')],['obs','Observação',o=>o.obs]];

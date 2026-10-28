@@ -246,13 +246,31 @@ $('#bKey').onclick=()=>{const k=prompt('Cole sua chave da API do Gemini (aistudi
 $('#bImp').onclick=()=>{if(!chave()){$('#bKey').click();if(!chave())return}$('#fIn').click()};
 $('#fIn').onchange=e=>{const f=[...e.target.files];e.target.value='';if(f.length)importar(f)};
 const b64=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]);r.onerror=no;r.readAsDataURL(f)});
+let modelos=null;
+async function listaModelos(){
+  if(modelos)return modelos;
+  try{
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=100&key=${chave()}`),j=await r.json();
+    modelos=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')&&/flash/.test(m.name)&&!/image|tts|live|audio|thinking|exp|robotics|computer/.test(m.name)).map(m=>m.name.replace('models/','')).filter(n=>n!==MODEL);
+  }catch(e){modelos=[]}
+  return modelos;
+}
+const espera=ms=>new Promise(r=>setTimeout(r,ms));
 async function lerImagem(f){
-  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${chave()}`,{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({contents:[{parts:[{text:PROMPT},{inline_data:{mime_type:f.type||'image/jpeg',data:await b64(f)}}]}],generationConfig:{responseMimeType:'application/json',temperature:0}})});
-  const j=await r.json();
-  if(!r.ok)throw new Error(j.error?.message||('Erro '+r.status));
-  return JSON.parse(j.candidates[0].content.parts.map(p=>p.text||'').join('').replace(/```json|```/g,'').trim());
+  const dados=await b64(f),body=JSON.stringify({contents:[{parts:[{text:PROMPT},{inline_data:{mime_type:f.type||'image/jpeg',data:dados}}]}],generationConfig:{responseMimeType:'application/json',temperature:0}});
+  let ultimo='';
+  for(const m of [MODEL,...await listaModelos()]){
+    for(let n=0;n<2;n++){
+      let r,j;
+      try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${chave()}`,{method:'POST',headers:{'Content-Type':'application/json'},body})}catch(e){throw new Error('sem conexão com o Gemini')}
+      j=await r.json().catch(()=>({}));
+      if(r.ok){try{return JSON.parse(j.candidates[0].content.parts.map(x=>x.text||'').join('').replace(/```json|```/g,'').trim())}catch(e){ultimo='resposta ilegível';break}}
+      ultimo=j.error?.message||('erro '+r.status);
+      if(r.status===503||r.status===429||/demand|overload/i.test(ultimo)){await espera(3000);continue}
+      break;
+    }
+  }
+  throw new Error(/demand|overload|quota|429|503/i.test(ultimo)?'o Gemini está sobrecarregado agora. Tente de novo em alguns minutos.':ultimo);
 }
 async function importar(files){
   dlg.innerHTML='<h2>Lendo imagens…</h2><p id="log"></p>';dlg.showModal();

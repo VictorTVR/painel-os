@@ -92,6 +92,7 @@ body[data-aba=hist] .v-painel,body[data-aba=nova] .v-painel{display:none!importa
 .v-hist label,.nf label{display:flex;flex-direction:column;font-size:13px;color:var(--mut);gap:3px}
 .nf{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:10px}
 .nf .full{grid-column:1/-1}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;z-index:99;display:none;max-width:90vw;text-align:center}
 .imp{display:grid;gap:10px;margin:10px 0}
 .imp button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;padding:14px 16px;background:#fff;color:var(--ink);border:2px solid var(--line);border-radius:10px}
 .imp button b{font-size:18px;color:var(--acc)}.imp button span{font-size:14px;color:var(--mut)}
@@ -158,6 +159,7 @@ body[data-aba=hist] .v-painel,body[data-aba=nova] .v-painel{display:none!importa
 </section>
 <input type="file" id="fIn" accept="image/*" multiple hidden>
 <input type="file" id="fPla" accept=".xlsx,.xls,.csv,.tsv,.txt" hidden>
+<div id="toast" role="status"></div>
 <dialog id="dlg"></dialog>
 
 <script>
@@ -325,36 +327,41 @@ async function lerImagem(f){
 }
 async function importar(files){
   dlg.innerHTML='<h2>Lendo imagens…</h2><p id="log"></p>';dlg.showModal();
-  const rows=[],urls=[];
+  const rows=[],urls=[],erros=[];
   for(let i=0;i<files.length;i++){
     $('#log').textContent=`Imagem ${i+1} de ${files.length}`;urls.push(URL.createObjectURL(files[i]));
     try{(await lerImagem(files[i])).forEach(x=>rows.push({os:String(x.os||'').trim(),cliente:x.cliente||'',frota:x.frota||'',km:x.km||'',abertura:x.abertura||'',vin:(x.vin||'').replace(/\s/g,'').toUpperCase(),placa:(x.placa||'').replace(/[\s-]/g,'').toUpperCase(),desc:x.descricao||x.desc||''}))}
-    catch(err){$('#log').insertAdjacentHTML('afterend',`<p class="err">Imagem ${i+1}: ${esc(err.message)}</p>`)}
+    catch(err){erros.push(`Imagem ${i+1}: ${err.message}`)}
   }
-  conferir(rows,urls);
+  conferir(rows,urls,erros);
 }
 const COLS=[['os','OS'],['cliente','Cliente'],['frota','Frota'],['km','Km'],['abertura','Abertura'],['vin','VIN'],['placa','Placa'],['desc','Descrição']];
-function conferir(rows,urls){
+function conferir(rows,urls,erros=[]){
   const falt=data.filter(o=>pend(o)&&o.origem!=='concessionaria'&&!rows.some(r=>r.os===o.os));
-  dlg.innerHTML=`<h2>Conferir antes de salvar</h2>
+  dlg.innerHTML=`<h2>Conferir antes de salvar</h2>${erros.length?`<div class="err">${erros.map(e=>`<p>${esc(e)}</p>`).join('')}</div>`:''}${rows.length?'':'<p class="err"><b>Nenhuma OS foi lida, então não há nada para salvar.</b> Feche e tente de novo em alguns minutos, ou use a importação por planilha ou por código.</p>'}
   <div class="thumbs">${urls.map(u=>`<a href="${u}" target="_blank"><img src="${u}" alt="Imagem do relatório"></a>`).join('')}</div>
   <div class="tw"><table><thead><tr>${COLS.map(c=>`<th>${c[1]}</th>`).join('')}<th></th></tr></thead>
   <tbody>${rows.map(r=>`<tr>${COLS.map(([k])=>`<td><input type="text" data-k="${k}" value="${esc(r[k])}"></td>`).join('')}<td><button class="ghost" data-del aria-label="Remover linha">×</button></td></tr>`).join('')}</tbody></table></div>
   ${rows.length&&falt.length?`<label class="auto"><input type="checkbox" id="auto" checked><span>Fechar automaticamente ${falt.length} OS pendentes que não aparecem neste relatório: ${esc(falt.map(o=>o.os).join(', '))}. Desmarque se você importou só parte do relatório.</span></label>`:''}
-  <div class="bar"><button class="ghost" id="bCan">Cancelar</button><button id="bSave">Salvar</button></div>`;
+  <p class="err" id="sErr"></p><div class="bar"><button class="ghost" id="bCan">Cancelar</button><button id="bSave" ${rows.length?'':'disabled'}>Salvar</button></div>`;
   dlg.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>b.closest('tr').remove());
   $('#bCan').onclick=()=>dlg.close();
   $('#bSave').onclick=()=>{
-    const nums=new Set();
-    dlg.querySelectorAll('tbody tr').forEach(tr=>{
-      const r={};tr.querySelectorAll('input').forEach(i=>r[i.dataset.k]=i.value.trim());
-      if(!r.os)return;nums.add(r.os);
-      const ex=data.find(o=>o.os===r.os);
-      ex?Object.keys(r).forEach(k=>{if(r[k]!==''||!ex[k])ex[k]=r[k]}):data.push({...r,status:'aguardando',tecnicos:[],obs:''});
-    });
-    if($('#auto')?.checked){const h=new Date().toLocaleDateString('pt-BR');
-      data.forEach(o=>{if(pend(o)&&o.origem!=='concessionaria'&&!nums.has(o.os)){o.status='concluido';o.obs=(o.obs?o.obs+' | ':'')+'Fechado automaticamente em '+h}})}
-    save();dlg.close();
+    try{
+      const nums=new Set();let novas=0,atual=0,fech=0;
+      dlg.querySelectorAll('tbody tr').forEach(tr=>{
+        const r={};tr.querySelectorAll('input').forEach(i=>r[i.dataset.k]=i.value.trim());
+        if(!r.os)return;nums.add(r.os);
+        const ex=data.find(o=>o.os===r.os);
+        if(ex){Object.keys(r).forEach(k=>{if(r[k]!==''||!ex[k])ex[k]=r[k]});atual++}
+        else{data.push({...r,status:'aguardando',tecnicos:[],obs:''});novas++}
+      });
+      if(!nums.size){$('#sErr').textContent='Nenhuma OS para salvar.';return}
+      if($('#auto')?.checked){const h=new Date().toLocaleDateString('pt-BR');
+        data.forEach(o=>{if(pend(o)&&o.origem!=='concessionaria'&&!nums.has(o.os)){o.status='concluido';o.obs=(o.obs?o.obs+' | ':'')+'Fechado automaticamente em '+h;fech++}})}
+      save();dlg.close();aba('painel');render();
+      toast(`${novas} OS nova(s), ${atual} atualizada(s)`+(fech?`, ${fech} fechada(s) automaticamente`:'')+'.');
+    }catch(e){$('#sErr').textContent='Erro ao salvar: '+e.message}
   };
 }
 // ---------- Importação por planilha (modelo: planilha_base.xlsx) ----------
@@ -437,6 +444,7 @@ $('#bCol').onclick=()=>{
     }catch(e){$('#cEr').textContent='Não consegui ler: '+e.message}
   };
 };
+function toast(m){const e=$('#toast');e.textContent=m;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>{e.style.display='none'},7000)}
 // ---------- Importar dados (escolha do método) ----------
 $('#bImpD').onclick=()=>{
   dlg.innerHTML=`<h2>Importar dados</h2><p>Escolha como você quer importar as OS.</p>

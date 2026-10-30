@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OS em aberto – Pós-venda</title>
 <style>
-:root{--bg:#eef1f4;--ink:#16222d;--mut:#5d6c7a;--card:#fff;--line:#d3dae1;--verde:#2e9e5b;--amarelo:#e6ac12;--vermelho:#d3382d;--cinza:#9aa7b3;--acc:#0d5c75}
+:root{--bg:#eef1f4;--ink:#16222d;--mut:#5d6c7a;--card:#fff;--line:#d3dae1;--verde:#2e9e5b;--amarelo:#e6ac12;--vermelho:#d3382d;--cinza:#9aa7b3;--acc:#0d5c75;--roxo:#8f5fe8;--azul:#1f7ae0}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 "Bahnschrift","Segoe UI",system-ui,sans-serif}
 header,main,#graf{max-width:1100px;margin:auto;padding-left:16px;padding-right:16px}
@@ -16,14 +16,14 @@ h1{margin:0;font-size:26px;font-weight:600}
 button{font:inherit;border:0;border-radius:6px;padding:9px 14px;background:var(--acc);color:#fff;cursor:pointer}
 button.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
 :focus-visible{outline:3px solid #7fb8c9;outline-offset:2px}
-.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:14px}
 .s{background:var(--card);color:var(--ink);text-align:left;border-radius:8px;padding:10px 12px;border-top:5px solid var(--cinza);cursor:pointer}.s.active{box-shadow:0 0 0 3px var(--acc)}
 .s b{font-size:30px;font-weight:600;display:block;line-height:1.1}
 .s span{font-size:13px;color:var(--mut)}
-.s.verde{border-color:var(--verde)}.s.amarelo{border-color:var(--amarelo)}.s.vermelho{border-color:var(--vermelho)}
+.s.verde{border-color:var(--verde)}.s.amarelo{border-color:var(--amarelo)}.s.vermelho{border-color:var(--vermelho)}.s.peca{border-color:var(--azul)}
 .flt{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
 .flt label,dialog label{display:flex;flex-direction:column;font-size:13px;color:var(--mut);gap:3px}
-select,input[type=text],input[type=date],textarea{font:inherit;padding:8px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+select,input[type=text],input[type=date],input[type=password],textarea{font:inherit;padding:8px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink)}
 main{padding-top:8px;padding-bottom:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;align-items:start}
 .blk{background:var(--card);border-radius:10px;border-left:10px solid var(--cinza);overflow:hidden}
 .blk.verde{border-color:var(--verde)}.blk.amarelo{border-color:var(--amarelo)}.blk.vermelho{border-color:var(--vermelho)}
@@ -41,6 +41,8 @@ div.head{cursor:default}
 .os{border:1px solid var(--line);border-left:6px solid var(--cinza);border-radius:8px;padding:10px 12px;background:#fafbfc;display:flex;flex-direction:column;gap:6px}
 .os.verde{border-left-color:var(--verde)}.os.amarelo{border-left-color:var(--amarelo)}.os.vermelho{border-left-color:var(--vermelho)}
 .os.concluido{background:#f1f3f5}
+.os.atend{border-left-color:var(--roxo)}.os.atend .d{color:#6d3fc4}.dot.atend{background:var(--roxo)}
+.os.peca{border-left-color:var(--azul)}.os.peca .d{color:#1558a8}.dot.peca{background:var(--azul)}
 .l1{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
 .l1 b{font-size:17px}
 .d{font-size:14px;font-weight:600}
@@ -77,6 +79,22 @@ td input{width:100%;font:inherit;font-size:14px;padding:6px;border:1px solid var
 .bar{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;align-items:center;margin-top:10px}
 .err{color:var(--vermelho);margin:6px 0 0}
 .ob{font-size:14px;resize:vertical}
+.wrap{max-width:1100px;margin:auto;padding:8px 16px 40px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.tabs button{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+.tabs button.on{background:var(--acc);color:#fff}
+.v-hist,.v-nova{display:none}
+body[data-aba=hist] .v-hist,body[data-aba=nova] .v-nova{display:block}
+body[data-aba=hist] .v-painel,body[data-aba=nova] .v-painel{display:none!important}
+.bd{font-size:11px;font-weight:600;background:#e4eaef;border-radius:10px;padding:1px 8px;margin-left:6px}
+.hh{background:var(--card);border-radius:10px;padding:12px 14px;margin-top:12px}
+.hres{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));margin-top:12px}
+.v-hist label,.nf label{display:flex;flex-direction:column;font-size:13px;color:var(--mut);gap:3px}
+.nf{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:10px}
+.nf .full{grid-column:1/-1}
+.hf{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}.hf label{min-width:220px}
+.st{font-size:12px;font-weight:700;border-radius:10px;padding:1px 8px;color:#fff;background:var(--cinza)}
+.st.aguardando{background:#5d6c7a}.st.atendimento{background:var(--roxo)}.st.concluido{background:var(--verde)}.st.peca{background:var(--azul)}
 .tot{display:flex;align-items:baseline;gap:14px;margin-top:14px;background:var(--acc);color:#fff;border-radius:10px;padding:12px 18px}.tot b{font-size:52px;font-weight:800;line-height:1}.tot span{font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.02em}
 .sync{font-size:13px;color:var(--mut);margin-top:6px}
 .rf{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}.rf fieldset{border:1px solid var(--line);border-radius:8px;margin:0;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0}.rf legend{font-size:13px;color:var(--mut)}
@@ -98,15 +116,40 @@ td input{width:100%;font:inherit;font-size:14px;padding:6px;border:1px solid var
     </div>
   </div>
   <div class="sync" id="sync"></div>
-  <div class="tot" aria-live="polite"><b id="totN">0</b><span>OS abertas</span></div>
-  <div class="sum" id="sum"></div>
-  <div class="flt">
+  <nav class="tabs"><button data-aba="painel" class="on">Painel</button><button data-aba="hist">Histórico do veículo</button><button data-aba="nova">Nova OS</button></nav>
+  <div class="tot v-painel" aria-live="polite"><b id="totN">0</b><span>OS abertas</span></div>
+  <div class="sum v-painel" id="sum"></div>
+  <div class="flt v-painel">
     <label>Situação<select id="fSit"><option value="pend">Pendentes</option><option value="conc">Concluídas</option><option value="todas">Todas</option></select></label>
     <label>Técnico<select id="fTec"></select></label>
   </div>
 </header>
-<main id="grid"></main>
-<section id="graf"></section>
+<main id="grid" class="v-painel"></main>
+<section id="graf" class="v-painel"></section>
+<section id="vHist" class="v-hist wrap">
+  <h2>Histórico do veículo</h2>
+  <div class="hf"><label>Buscar por<select id="hCat"><option value="veic">Veículo (prefixo ou VIN)</option><option value="gar">Garagem</option><option value="pla">Placa</option></select></label>
+  <label>Pesquisa<input type="text" id="hQ" list="dlHist" placeholder="Ex.: 71115" autocomplete="off"></label></div>
+  <datalist id="dlHist"></datalist>
+  <div id="hRes"></div>
+</section>
+<section id="vNova" class="v-nova wrap">
+  <h2>Adicionar ordem de serviço</h2>
+  <div class="nf">
+    <label>Tipo<input type="text" id="nTipo" value="Concessionária" readonly></label>
+    <label><span id="nCodL">Código</span><input type="text" id="nCod" autocomplete="off"></label>
+    <label>Garagem<select id="nGar"></select></label>
+    <label>Frota (prefixo)<input type="text" id="nFro" autocomplete="off"></label>
+    <label>Km (opcional)<input type="text" id="nKm" inputmode="numeric"></label>
+    <label>Data de abertura<input type="date" id="nAb"></label>
+    <label>VIN (opcional)<input type="text" id="nVin" autocomplete="off"></label>
+    <label>Placa (opcional)<input type="text" id="nPla" autocomplete="off"></label>
+    <label>Status inicial<select id="nSt"><option value="aguardando">Aguardando</option><option value="atendimento">Em atendimento</option></select></label>
+    <label class="full">Descrição<textarea id="nDesc" rows="3"></textarea></label>
+    <label class="full">Observação (opcional)<textarea id="nObs" rows="2"></textarea></label>
+  </div>
+  <div class="bar"><span id="nMsg"></span><button id="nAdd">Adicionar OS</button></div>
+</section>
 <input type="file" id="fIn" accept="image/*" multiple hidden>
 <input type="file" id="fPla" accept=".xlsx,.xls,.csv,.tsv,.txt" hidden>
 <dialog id="dlg"></dialog>
@@ -117,7 +160,7 @@ const chave=()=>localStorage.getItem(KK)||'';
 const GAR=['AutoBless','AlfaRodobus','MobiBrasil','MoveBuss','CampoBelo','TransWolf','Pessêgo','Express','TransPass','GatoPreto','SantaBrigda','SusanTour','KBPX','NorteBuss G1','NorteBuss G2'];
 const TEC0=['Victor Tavares','Mario','Alex','Yan','Danilo','José Carlos','Ricardo','Roberto','Alexon','Angel','Carlos','Fell','Yeferson','Alessandro','Fábrica'];
 const SEED=[];
-const ST={aguardando:'Aguardando',atendimento:'Em atendimento',concluido:'Concluído'};
+const ST={aguardando:'Aguardando',atendimento:'Em atendimento',peca:'Aguardando peça',concluido:'Concluído'};
 const SEV={vermelho:3,amarelo:2,verde:1,cinza:0};
 const PAL=['#0d5c75','#d3382d','#e6ac12','#2e9e5b','#7a4fb5','#e07a1f','#3a8fd6','#b5427a','#6b8e23','#8c6d46','#2bb3a3','#5d6c7a','#c24a1a','#9b59b6'];
 const $=s=>document.querySelector(s), dlg=$('#dlg');
@@ -130,7 +173,7 @@ try{data=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!Array.isArray(data))data=SEED;
 try{tecs=JSON.parse(localStorage.getItem(KT))}catch(e){}
 if(!Array.isArray(tecs))tecs=TEC0;
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));localStorage.setItem(KT,JSON.stringify(tecs))}catch(e){}push()};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));localStorage.setItem(KT,JSON.stringify(tecs));if(gh)localStorage.setItem('osbyd.sujo','1')}catch(e){}push()};
 const pend=o=>o.status!=='concluido';
 function garagem(c){const k=norm(c);if(!k)return'Sem cliente';return GAR.find(g=>{const n=norm(g);return k.includes(n)||(k.length>2&&n.includes(k))})||String(c).trim()}
 function pd(s){const m=/(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s||'');return m?new Date(+m[3],m[2]-1,+m[1]):null}
@@ -143,15 +186,15 @@ function fillTec(){const v=$('#fTec').value;$('#fTec').innerHTML='<option value=
 
 function render(){
   const sit=$('#fSit').value,tec=$('#fTec').value,filtrando=tec||sit==='conc'||corSel;
-  const cnt={verde:0,amarelo:0,vermelho:0},g={},tot={};let abertas=0;
+  const cnt={verde:0,amarelo:0,vermelho:0,peca:0},g={},tot={};let abertas=0;
   GAR.forEach(n=>g[n]=[]);
   data.forEach(o=>{
     const n=dias(o),c=cor(n),fin=!pend(o),k=garagem(o.cliente);
-    if(!fin){abertas++;if(cnt[c]!==undefined)cnt[c]++;tot[k]=(tot[k]||0)+1}
-    if((corSel?(fin||c!==corSel):((sit==='pend'&&fin)||(sit==='conc'&&!fin)))||(tec&&!(o.tecnicos||[]).includes(tec)))return;
+    if(!fin){abertas++;if(cnt[c]!==undefined)cnt[c]++;if(o.status==='peca')cnt.peca++;tot[k]=(tot[k]||0)+1}
+    if((corSel?(fin||!(corSel==='peca'?o.status==='peca':c===corSel)):((sit==='pend'&&fin)||(sit==='conc'&&!fin)))||(tec&&!(o.tecnicos||[]).includes(tec)))return;
     (g[k]??=[]).push({o,n,c,fin});
   });
-  $('#sum').innerHTML=[['vermelho','mais de 5 dias úteis'],['amarelo','de 3 a 5 dias úteis'],['verde','até 2 dias úteis']]
+  $('#sum').innerHTML=[['vermelho','mais de 5 dias úteis'],['amarelo','de 3 a 5 dias úteis'],['verde','até 2 dias úteis'],['peca','aguardando peça']]
     .map(([k,l])=>`<button class="s ${k} ${corSel===k?'active':''}" data-cor="${k}" aria-pressed="${corSel===k}"><b>${cnt[k]}</b><span>${l}</span></button>`).join('');
   const blocks=Object.entries(g).filter(([,a])=>a.length||!filtrando).map(([nome,arr])=>{
     arr.sort((a,b)=>a.fin-b.fin||(b.n??-1)-(a.n??-1));
@@ -163,20 +206,20 @@ function render(){
   <section class="blk ${b.worst} ${corSel||abertos.has(b.nome)?'open':''}">
     <button class="head" data-g="${esc(b.nome)}" aria-expanded="${abertos.has(b.nome)}">
       <span class="nm">${esc(b.nome)}</span>
-      <span class="dots">${b.ab.map(x=>`<i class="dot ${x.c}"></i>`).join('')}</span>
+      <span class="dots">${b.ab.map(x=>`<i class="dot ${x.o.status==='atendimento'?'atend':x.o.status==='peca'?'peca':x.c}"></i>`).join('')}</span>
       <span class="ct">${b.arr.length} OS</span>
     </button>
     <div class="list">${b.arr.map(({o,n,c,fin})=>`
-      <article class="os ${fin?'concluido cinza':c}">
-        <div class="l1"><b>${esc(o.os)}</b><span class="d">${fin?'Concluída':txt(n)}</span></div>
+      <article class="os ${fin?'concluido cinza':(o.status==='atendimento'?'atend':o.status==='peca'?'peca':c)}">
+        <div class="l1"><b>${esc(o.os)}</b>${o.origem==='concessionaria'?'<span class="bd">Concessionária</span>':''}<span class="d">${fin?'Concluída':txt(n)}</span></div>
         <p>${esc(o.desc)}</p>
-        <dl><div><dt>Frota</dt><dd>${esc(o.frota)}</dd></div><div><dt>Km</dt><dd>${esc(o.km)||'–'}</dd></div><div><dt>Aberta em</dt><dd>${esc(o.abertura)}</dd></div><div><dt>VIN</dt><dd>${esc(o.vin)}</dd></div></dl>
+        <dl><div><dt>Frota</dt><dd>${esc(o.frota)}</dd></div><div><dt>Km</dt><dd>${esc(o.km)||'–'}</dd></div><div><dt>Aberta em</dt><dd>${esc(o.abertura)}</dd></div><div><dt>VIN</dt><dd>${esc(o.vin)}</dd></div>${o.placa?`<div><dt>Placa</dt><dd>${esc(o.placa)}</dd></div>`:''}</dl>
         ${fin?`<div class="fim"><b>Técnicos:</b> ${esc((o.tecnicos||[]).join(', ')||'–')}<br><b>Obs.:</b> ${esc(o.obs)||'–'}</div><button class="ghost" data-fin="${esc(o.os)}">Editar finalização</button>`:''}
         ${fin?'':`<textarea class="ob" data-ob="${esc(o.os)}" rows="2" placeholder="Observação (ex.: aguardando peça)" aria-label="Observação da ${esc(o.os)}">${esc(o.obs)}</textarea>`}
         <select data-os="${esc(o.os)}" aria-label="Status da ${esc(o.os)}">${Object.entries(ST).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}</select>
       </article>`).join('')}</div>
   </section>`).join('')||'<p class="vazio">Nada para mostrar com estes filtros.</p>';
-  $('#totN').textContent=abertas;graficos(tot);
+  $('#totN').textContent=abertas;graficos(tot);if(document.body.dataset.aba==='hist')renderHist();
 }
 
 // ---------- gráficos ----------
@@ -243,7 +286,7 @@ $('#bTec').onclick=()=>{
 };
 
 // ---------- Importação por imagem (Gemini) ----------
-const PROMPT='Esta imagem é uma tabela de ordens de serviço. Extraia TODAS as linhas. Responda somente com um array JSON de objetos com as chaves: os, cliente, frota, km, abertura (formato DD/MM/AAAA), vin (17 caracteres, junte as quebras de linha), descricao (apenas o texto em português, junte as quebras de linha). Use null quando o campo estiver vazio ou escrito "null". Não invente dados.';
+const PROMPT='Esta imagem é uma tabela de ordens de serviço. Extraia TODAS as linhas. Responda somente com um array JSON de objetos com as chaves: os, cliente, frota, km, abertura (formato DD/MM/AAAA), vin (17 caracteres, junte as quebras de linha), placa (somente se existir uma coluna de placa), descricao (apenas o texto em português, junte as quebras de linha). Use null quando o campo estiver vazio ou escrito "null". Não invente dados.';
 $('#bKey').onclick=()=>{const k=prompt('Cole sua chave da API do Gemini (aistudio.google.com/apikey):',localStorage.getItem(KK)||'');if(k!==null){localStorage.setItem(KK,k.trim());push()}};
 $('#bImp').onclick=()=>{if(!chave()){$('#bKey').click();if(!chave())return}$('#fIn').click()};
 $('#fIn').onchange=e=>{const f=[...e.target.files];e.target.value='';if(f.length)importar(f)};
@@ -279,14 +322,14 @@ async function importar(files){
   const rows=[],urls=[];
   for(let i=0;i<files.length;i++){
     $('#log').textContent=`Imagem ${i+1} de ${files.length}`;urls.push(URL.createObjectURL(files[i]));
-    try{(await lerImagem(files[i])).forEach(x=>rows.push({os:String(x.os||'').trim(),cliente:x.cliente||'',frota:x.frota||'',km:x.km||'',abertura:x.abertura||'',vin:(x.vin||'').replace(/\s/g,'').toUpperCase(),desc:x.descricao||x.desc||''}))}
+    try{(await lerImagem(files[i])).forEach(x=>rows.push({os:String(x.os||'').trim(),cliente:x.cliente||'',frota:x.frota||'',km:x.km||'',abertura:x.abertura||'',vin:(x.vin||'').replace(/\s/g,'').toUpperCase(),placa:(x.placa||'').replace(/[\s-]/g,'').toUpperCase(),desc:x.descricao||x.desc||''}))}
     catch(err){$('#log').insertAdjacentHTML('afterend',`<p class="err">Imagem ${i+1}: ${esc(err.message)}</p>`)}
   }
   conferir(rows,urls);
 }
-const COLS=[['os','OS'],['cliente','Cliente'],['frota','Frota'],['km','Km'],['abertura','Abertura'],['vin','VIN'],['desc','Descrição']];
+const COLS=[['os','OS'],['cliente','Cliente'],['frota','Frota'],['km','Km'],['abertura','Abertura'],['vin','VIN'],['placa','Placa'],['desc','Descrição']];
 function conferir(rows,urls){
-  const falt=data.filter(o=>pend(o)&&!rows.some(r=>r.os===o.os));
+  const falt=data.filter(o=>pend(o)&&o.origem!=='concessionaria'&&!rows.some(r=>r.os===o.os));
   dlg.innerHTML=`<h2>Conferir antes de salvar</h2>
   <div class="thumbs">${urls.map(u=>`<a href="${u}" target="_blank"><img src="${u}" alt="Imagem do relatório"></a>`).join('')}</div>
   <div class="tw"><table><thead><tr>${COLS.map(c=>`<th>${c[1]}</th>`).join('')}<th></th></tr></thead>
@@ -301,10 +344,10 @@ function conferir(rows,urls){
       const r={};tr.querySelectorAll('input').forEach(i=>r[i.dataset.k]=i.value.trim());
       if(!r.os)return;nums.add(r.os);
       const ex=data.find(o=>o.os===r.os);
-      ex?Object.assign(ex,r):data.push({...r,status:'aguardando',tecnicos:[],obs:''});
+      ex?Object.keys(r).forEach(k=>{if(r[k]!==''||!ex[k])ex[k]=r[k]}):data.push({...r,status:'aguardando',tecnicos:[],obs:''});
     });
     if($('#auto')?.checked){const h=new Date().toLocaleDateString('pt-BR');
-      data.forEach(o=>{if(pend(o)&&!nums.has(o.os)){o.status='concluido';o.obs=(o.obs?o.obs+' | ':'')+'Fechado automaticamente em '+h}})}
+      data.forEach(o=>{if(pend(o)&&o.origem!=='concessionaria'&&!nums.has(o.os)){o.status='concluido';o.obs=(o.obs?o.obs+' | ':'')+'Fechado automaticamente em '+h}})}
     save();dlg.close();
   };
 }
@@ -331,7 +374,7 @@ function dataBR(v){
   m=/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/.exec(s);if(m)return pad(+m[1])+'/'+pad(+m[2])+'/'+(m[3].length===2?'20'+m[3]:m[3]);
   return s;
 }
-const CAMPOS={os:/^os$|^ordem/,cliente:/^(cliente|garagem)/,frota:/^(frota|prefixo)/,km:/^km/,abertura:/^(ab|data)/,vin:/^(vin|chassi)/,desc:/^descri/};
+const CAMPOS={os:/^os$|^ordem/,cliente:/^(cliente|garagem)/,frota:/^(frota|prefixo)/,km:/^km/,abertura:/^(ab|data)/,vin:/^(vin|chassi)/,placa:/^placa/,desc:/^descri/};
 function linhasPlanilha(L){
   const hi=L.slice(0,15).findIndex(r=>r.some(c=>norm(c)==='os')&&r.some(c=>/^(cliente|garagem)/.test(norm(c))));
   if(hi<0)throw new Error('não achei o cabeçalho. A planilha precisa ter as colunas OS e Cliente (veja a planilha_base).');
@@ -343,7 +386,7 @@ function linhasPlanilha(L){
   L.slice(hi+1).forEach(r=>{
     const os=S(r,'os');
     if(!os||/exemplo/i.test(os)){if(r.some(c=>String(c).trim()))ign++;return}
-    rows.push({os,cliente:S(r,'cliente'),frota:S(r,'frota'),km:S(r,'km'),abertura:dataBR(get(r,'abertura')),vin:S(r,'vin').replace(/\s/g,'').toUpperCase(),desc:S(r,'desc')});
+    rows.push({os,cliente:S(r,'cliente'),frota:S(r,'frota'),km:S(r,'km'),abertura:dataBR(get(r,'abertura')),vin:S(r,'vin').replace(/\s/g,'').toUpperCase(),placa:S(r,'placa').replace(/[\s-]/g,'').toUpperCase(),desc:S(r,'desc')});
   });
   return{rows,ign};
 }
@@ -370,7 +413,7 @@ async function planilha(f){
   }
 }
 // ---------- relatório personalizável ----------
-const RC=[['os','OS',o=>o.os],['gar','Garagem',o=>garagem(o.cliente)],['frota','Frota',o=>o.frota],['km','Km',o=>o.km],['ab','Abertura',o=>o.abertura],['dias','Dias úteis',o=>dias(o)??''],['pri','Prioridade',o=>pend(o)?cor(dias(o)):'concluída'],['vin','VIN',o=>o.vin],['desc','Descrição',o=>o.desc],['st','Status',o=>ST[o.status]||o.status],['tec','Técnicos',o=>(o.tecnicos||[]).join(', ')],['obs','Observação',o=>o.obs]];
+const RC=[['os','OS',o=>o.os],['gar','Garagem',o=>garagem(o.cliente)],['frota','Frota',o=>o.frota],['km','Km',o=>o.km],['ab','Abertura',o=>o.abertura],['dias','Dias úteis',o=>dias(o)??''],['pri','Prioridade',o=>pend(o)?cor(dias(o)):'concluída'],['vin','VIN',o=>o.vin],['pla','Placa',o=>o.placa||''],['desc','Descrição',o=>o.desc],['st','Status',o=>ST[o.status]||o.status],['tec','Técnicos',o=>(o.tecnicos||[]).join(', ')],['obs','Observação',o=>o.obs],['orig','Origem',o=>o.origem==='concessionaria'?'Concessionária':'BYD']];
 $('#bRel').onclick=()=>{
   const gars=[...new Set([...GAR,...data.map(o=>garagem(o.cliente))])];
   const ck=(n,v,l)=>`<label class="ck"><input type="checkbox" name="${n}" value="${esc(v)}" checked> ${esc(l)}</label>`;
@@ -409,15 +452,17 @@ $('#bRel').onclick=()=>{
 };
 // ---------- sincronização (GitHub) ----------
 const KG='osbyd.gh';
-let gh=null,tPush=null;
+let gh=null,tPush=null,tRetry=null;
 try{gh=JSON.parse(localStorage.getItem(KG))}catch(e){}
 const enc=s=>btoa(unescape(encodeURIComponent(s))),dec=s=>decodeURIComponent(escape(atob(s.replace(/\s/g,''))));
 const gUrl=()=>`https://api.github.com/repos/${gh.repo}/contents/dados.json`;
 const gHd=()=>({Authorization:'Bearer '+gh.token,Accept:'application/vnd.github+json'});
 function setSync(m,erro){const e=$('#sync');e.textContent=m;e.style.color=erro?'var(--vermelho)':'var(--mut)'}
+const msg=e=>/failed to fetch|network/i.test(e.message)?'sem conexão com o GitHub':e.message;
 const hora=()=>'Sincronizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 async function pull(){
   if(!gh)return;
+  if(localStorage.getItem('osbyd.sujo')==='1'){setSync('Enviando alterações pendentes…');push(true);return}
   try{
     const r=await fetch(gUrl()+'?t='+Date.now(),{headers:gHd()});
     if(r.status===404){if(data.length)push(true);else setSync('Conectado. Ainda sem dados no repositório.');return}
@@ -429,7 +474,7 @@ async function pull(){
     if(d.gk&&!localStorage.getItem(KK))localStorage.setItem(KK,d.gk);
     localStorage.setItem(KEY,JSON.stringify(data));localStorage.setItem(KT,JSON.stringify(tecs));
     fillTec();render();setSync(hora());
-  }catch(e){setSync('Sem sincronização: '+e.message,1)}
+  }catch(e){setSync('Sem sincronização: '+msg(e),1)}
 }
 function push(agora){clearTimeout(tPush);tPush=setTimeout(enviar,agora===true?0:800)}
 async function enviar(){
@@ -441,18 +486,84 @@ async function enviar(){
     const body={message:'Atualização do painel',content:enc(JSON.stringify({data,tecs,gk:localStorage.getItem(KK)||''}))};
     if(sha)body.sha=sha;
     const r=await fetch(gUrl(),{method:'PUT',headers:{...gHd(),'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!r.ok)throw new Error('erro '+r.status);
-    setSync(hora());
-  }catch(e){setSync('Sem sincronização: '+e.message,1)}
+    if(!r.ok)throw new Error(r.status===401?'token inválido':r.status===403?'sem permissão':'erro '+r.status);
+    localStorage.removeItem('osbyd.sujo');setSync(hora());
+  }catch(e){setSync('Sem sincronização ('+msg(e)+'). Suas alterações estão salvas aqui; tentando de novo em 30 s…',1);clearTimeout(tRetry);tRetry=setTimeout(()=>push(true),30000)}
 }
 $('#bSync').onclick=()=>{
   const r=prompt('Repositório PRIVADO dos dados, no formato usuario/repositorio:',gh?.repo||'');if(!r)return;
   const k=prompt('Token do GitHub (permissão Contents: Read and write, só neste repositório):',gh?.token||'');if(!k)return;
   gh={repo:r.trim(),token:k.trim()};localStorage.setItem(KG,JSON.stringify(gh));pull();
 };
+window.addEventListener('online',()=>pull());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!dlg.open)pull()});
 if(!gh)setSync('Sincronização desligada. Clique em “Sincronizar”.');
-fillTec();render();pull();
+// ---------- abas, histórico do veículo e nova OS ----------
+function aba(n){
+  document.body.dataset.aba=n;
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.aba===n));
+  if(n==='hist')renderHist();
+  if(n==='nova')prepNova();
+}
+document.querySelector('.tabs').onclick=e=>{const b=e.target.closest('[data-aba]');if(b)aba(b.dataset.aba)};
+const HC={
+  veic:{ph:'Ex.: 71115',txt:'o prefixo do veículo',op:()=>data.map(o=>o.frota),f:(o,q)=>norm(o.frota).includes(q)||norm(o.vin).includes(q)},
+  gar:{ph:'Ex.: CampoBelo',txt:'o nome da garagem',op:()=>[...GAR,...data.map(o=>garagem(o.cliente))],f:(o,q)=>norm(garagem(o.cliente)).includes(q)||norm(o.cliente).includes(q)},
+  pla:{ph:'Ex.: ABC1D23',txt:'a placa',op:()=>data.map(o=>o.placa),f:(o,q)=>norm(o.placa).includes(q)}};
+function renderHist(){
+  const c=HC[$('#hCat').value];$('#hQ').placeholder=c.ph;
+  $('#dlHist').innerHTML=[...new Set(c.op().filter(Boolean))].sort().map(f=>`<option value="${esc(f)}">`).join('');
+  const q=norm($('#hQ').value);
+  if(q.length<2){$('#hRes').innerHTML=`<p class="vazio">Digite ${c.txt} para ver o histórico de OS.</p>`;return}
+  const l=data.filter(o=>c.f(o,q)).sort((a,b)=>(pd(b.abertura)||0)-(pd(a.abertura)||0));
+  if(!l.length){$('#hRes').innerHTML='<p class="vazio">Nenhuma OS encontrada para este veículo.</p>';return}
+  const ab=l.filter(pend).length;
+  $('#hRes').innerHTML=`<div class="hh"><b>${l.length}</b> OS encontradas: <b>${ab}</b> pendentes e <b>${l.length-ab}</b> concluídas.</div>
+  <div class="hres">${l.map(o=>{const n=dias(o),p=pend(o);return`
+    <article class="os ${!p?'concluido cinza':(o.status==='atendimento'?'atend':o.status==='peca'?'peca':cor(n))}">
+      <div class="l1"><b>${esc(o.os)}</b>${o.origem==='concessionaria'?'<span class="bd">Concessionária</span>':''}<span class="st ${o.status}">${ST[o.status]||o.status}</span></div>
+      <p>${esc(o.desc)}</p>
+      <dl><div><dt>Frota</dt><dd>${esc(o.frota)}</dd></div><div><dt>Garagem</dt><dd>${esc(garagem(o.cliente))}</dd></div>${o.placa?`<div><dt>Placa</dt><dd>${esc(o.placa)}</dd></div>`:''}<div><dt>Aberta em</dt><dd>${esc(o.abertura)}${p?' ('+txt(n)+')':''}</dd></div><div><dt>VIN</dt><dd>${esc(o.vin)}</dd></div></dl>
+      ${!p?`<div class="fim"><b>Técnicos:</b> ${esc((o.tecnicos||[]).join(', ')||'–')}<br><b>Obs.:</b> ${esc(o.obs)||'–'}</div>`:(o.obs?`<div class="fim"><b>Obs.:</b> ${esc(o.obs)}</div>`:'')}
+    </article>`}).join('')}</div>`;
+}
+$('#hQ').oninput=renderHist;
+$('#hCat').onchange=()=>{$('#hQ').value='';renderHist()};
+const PREFIXO='TRACCIÓN';
+function prepNova(){
+  const gs=[...new Set([...GAR,...data.map(o=>garagem(o.cliente))])],v=$('#nGar').value;
+  $('#nGar').innerHTML=gs.map(g=>`<option ${g===v?'selected':''}>${esc(g)}</option>`).join('');
+  $('#nCodL').textContent=`Código (vira ${PREFIXO}-código; vazio = numera sozinho)`;
+  const d=new Date();if(!$('#nAb').value)$('#nAb').value=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+$('#nAdd').onclick=()=>{
+  const cod=$('#nCod').value.trim().toUpperCase().replace(PREFIXO,'').replace(/^[-\s]+/,''),m=$('#nMsg');
+  const erro=t=>{m.textContent=t;m.className='err'};
+  const n=Math.max(0,...data.filter(o=>o.origem==='concessionaria').map(o=>parseInt(String(o.os).replace(/\D/g,''))||0))+1;
+  const os=PREFIXO+'-'+(cod||String(n).padStart(3,'0'));
+  if(data.some(o=>o.os===os))return erro('Já existe uma OS com este código.');
+  const fro=$('#nFro').value.trim(),ab=dataBR($('#nAb').value),desc=$('#nDesc').value.trim();
+  if(!fro)return erro('Informe a frota (prefixo).');
+  if(!pd(ab))return erro('Informe a data de abertura.');
+  if(!desc)return erro('Escreva a descrição.');
+  data.push({os,cliente:$('#nGar').value,frota:fro,km:$('#nKm').value.trim(),abertura:ab,vin:$('#nVin').value.replace(/\s/g,'').toUpperCase(),placa:$('#nPla').value.replace(/[\s-]/g,'').toUpperCase(),desc,status:$('#nSt').value,tecnicos:[],obs:$('#nObs').value.trim(),origem:'concessionaria'});
+  save();['nCod','nFro','nKm','nVin','nPla','nDesc','nObs'].forEach(i=>$('#'+i).value='');
+  m.textContent='OS '+os+' adicionada.';m.className='';render();
+};
+
+// ---------- senha (trava simples contra uso acidental) ----------
+const SENHA_HASH=3157640238026326;
+const h53=(s,seed=0)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,c;i<s.length;i++){c=s.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677)}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)};
+function autoriza(f){
+  if(sessionStorage.getItem('osbyd.ok')==='1')return f();
+  dlg.innerHTML=`<h2>Senha</h2><label>Digite a senha para continuar<input type="password" id="sn" autocomplete="off"></label><p class="err" id="sne"></p>
+  <div class="bar"><button class="ghost" id="snC">Cancelar</button><button id="snOk">Entrar</button></div>`;
+  dlg.showModal();$('#sn').focus();
+  const ok=()=>{if(h53('osbyd|'+$('#sn').value)===SENHA_HASH){sessionStorage.setItem('osbyd.ok','1');dlg.close();f()}else $('#sne').textContent='Senha incorreta.'};
+  $('#snOk').onclick=ok;$('#sn').onkeydown=e=>{if(e.key==='Enter')ok()};$('#snC').onclick=()=>dlg.close();
+}
+['bTec','bKey','bSync'].forEach(id=>{const f=$('#'+id).onclick;$('#'+id).onclick=()=>autoriza(f)});
+fillTec();render();aba('painel');pull();
 </script>
 </body>
 </html>

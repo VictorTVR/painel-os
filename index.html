@@ -92,6 +92,11 @@ body[data-aba=hist] .v-painel,body[data-aba=nova] .v-painel{display:none!importa
 .v-hist label,.nf label{display:flex;flex-direction:column;font-size:13px;color:var(--mut);gap:3px}
 .nf{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:10px}
 .nf .full{grid-column:1/-1}
+.gh{grid-column:1/-1;margin:14px 0 2px;font-size:18px;padding:8px 12px;border-radius:8px}
+.gh.ga{background:#fff1dc;color:#9a5300;border-left:6px solid #e8890c}
+.gh.gm{background:#e2f4e8;color:#1d6b3d;border-left:6px solid var(--verde)}
+.os.fauto{border-left-color:#e8890c;background:#fff8ee}.os.fman{border-left-color:var(--verde);background:#f3faf5}
+.tf{font-size:12px;font-weight:700;border-radius:10px;padding:1px 8px}.tf.ta{background:#ffe2b8;color:#9a5300}.tf.tm{background:#cfeedb;color:#1d6b3d}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;z-index:99;display:none;max-width:90vw;text-align:center}
 .imp{display:grid;gap:10px;margin:10px 0}
 .imp button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;padding:14px 16px;background:#fff;color:var(--ink);border:2px solid var(--line);border-radius:10px}
@@ -129,6 +134,7 @@ body[data-aba=hist] .v-painel,body[data-aba=nova] .v-painel{display:none!importa
   <div class="flt v-painel">
     <label>Situação<select id="fSit"><option value="pend">Pendentes</option><option value="conc">Concluídas</option><option value="todas">Todas</option></select></label>
     <label>Técnico<select id="fTec"></select></label>
+    <label>Buscar OS<input type="text" id="fQ" placeholder="Código BYD ou TRACCIÓN" autocomplete="off"></label>
   </div>
 </header>
 <main id="grid" class="v-painel"></main>
@@ -183,6 +189,9 @@ try{tecs=JSON.parse(localStorage.getItem(KT))}catch(e){}
 if(!Array.isArray(tecs))tecs=TEC0;
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));localStorage.setItem(KT,JSON.stringify(tecs));if(gh)localStorage.setItem('osbyd.sujo','1')}catch(e){}push()};
 const pend=o=>o.status!=='concluido';
+const tipoFech=o=>o.fechamento||(/fechado automaticamente/i.test(o.obs||'')?'auto':'manual');
+const subseq=(a,b)=>{let i=0;for(const ch of b)if(ch===a[i])i++;return i===a.length};
+function achaOS(o,q){return norm(o.os).includes(q)||(o.origem==='concessionaria'&&q.length>=4&&subseq(q,norm(PREFIXO)))}
 function garagem(c){const k=norm(c);if(!k)return'Sem cliente';return GAR.find(g=>{const n=norm(g);return k.includes(n)||(k.length>2&&n.includes(k))})||String(c).trim()}
 function pd(s){const m=/(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s||'');return m?new Date(+m[3],m[2]-1,+m[1]):null}
 // dias úteis (seg–sex) desde a abertura, igual à coluna "Dias aberta" do relatório
@@ -193,14 +202,14 @@ const txt=n=>n==null?'sem data':n===1?'1 dia útil':n+' dias úteis';
 function fillTec(){const v=$('#fTec').value;$('#fTec').innerHTML='<option value="">Todos</option>'+tecs.map(t=>`<option ${t===v?'selected':''}>${esc(t)}</option>`).join('')}
 
 function render(){
-  const sit=$('#fSit').value,tec=$('#fTec').value,filtrando=tec||sit==='conc'||corSel;
+  const sit=$('#fSit').value,tec=$('#fTec').value,q=norm($('#fQ').value),filtrando=tec||sit==='conc'||corSel||q,concMode=sit==='conc'&&!corSel&&!q;
   const cnt={verde:0,amarelo:0,vermelho:0,peca:0},g={},tot={};let abertas=0;
   GAR.forEach(n=>g[n]=[]);
   data.forEach(o=>{
     const n=dias(o),c=cor(n),fin=!pend(o),k=garagem(o.cliente);
     if(!fin){abertas++;if(cnt[c]!==undefined)cnt[c]++;if(o.status==='peca')cnt.peca++;tot[k]=(tot[k]||0)+1}
-    if((corSel?(fin||!(corSel==='peca'?o.status==='peca':c===corSel)):((sit==='pend'&&fin)||(sit==='conc'&&!fin)))||(tec&&!(o.tecnicos||[]).includes(tec)))return;
-    (g[k]??=[]).push({o,n,c,fin});
+    if((corSel?(fin||!(corSel==='peca'?o.status==='peca':c===corSel)):(!q&&((sit==='pend'&&fin)||(sit==='conc'&&!fin))))||(tec&&!(o.tecnicos||[]).includes(tec))||(q&&!achaOS(o,q)))return;
+    (g[concMode&&fin?(tipoFech(o)==='auto'?'1|':'2|')+k:k]??=[]).push({o,n,c,fin});
   });
   $('#sum').innerHTML=[['vermelho','mais de 5 dias úteis'],['amarelo','de 3 a 5 dias úteis'],['verde','até 2 dias úteis'],['peca','aguardando peça']]
     .map(([k,l])=>`<button class="s ${k} ${corSel===k?'active':''}" data-cor="${k}" aria-pressed="${corSel===k}"><b>${cnt[k]}</b><span>${l}</span></button>`).join('');
@@ -208,25 +217,28 @@ function render(){
     arr.sort((a,b)=>a.fin-b.fin||(b.n??-1)-(a.n??-1));
     const ab=arr.filter(x=>!x.fin);
     return{nome,arr,ab,worst:ab.reduce((w,x)=>SEV[x.c]>SEV[w]?x.c:w,'cinza')};
-  }).sort((a,b)=>SEV[b.worst]-SEV[a.worst]||b.arr.length-a.arr.length);
-  $('#grid').innerHTML=blocks.map(b=>!b.arr.length?
-  `<section class="blk zero"><div class="head"><span class="nm">${esc(b.nome)}</span><span class="ct">0 OS</span></div></section>`:`
-  <section class="blk ${b.worst} ${corSel||abertos.has(b.nome)?'open':''}">
+  }).sort((a,b)=>(concMode?(+a.nome[0]||0)-(+b.nome[0]||0):0)||SEV[b.worst]-SEV[a.worst]||b.arr.length-a.arr.length);
+  let ult='';
+  $('#grid').innerHTML=blocks.map(b=>{const m=/^([12])\|/.exec(b.nome),grp=m?m[1]:'',lab=b.nome.replace(/^[12]\|/,'');
+    const cab=concMode&&grp&&grp!==ult?(ult=grp,`<h3 class="gh ${grp==='1'?'ga':'gm'}">${grp==='1'?'Fechadas automaticamente':'Fechadas manualmente'} (${blocks.filter(x=>x.nome[0]===grp).reduce((s,x)=>s+x.arr.length,0)})</h3>`):'';
+    return cab+(!b.arr.length?
+  `<section class="blk zero"><div class="head"><span class="nm">${esc(lab)}</span><span class="ct">0 OS</span></div></section>`:`
+  <section class="blk ${b.worst} ${corSel||q||abertos.has(b.nome)?'open':''}">
     <button class="head" data-g="${esc(b.nome)}" aria-expanded="${abertos.has(b.nome)}">
-      <span class="nm">${esc(b.nome)}</span>
+      <span class="nm">${esc(lab)}</span>
       <span class="dots">${b.ab.map(x=>`<i class="dot ${x.o.status==='atendimento'?'atend':x.o.status==='peca'?'peca':x.c}"></i>`).join('')}</span>
       <span class="ct">${b.arr.length} OS</span>
     </button>
     <div class="list">${b.arr.map(({o,n,c,fin})=>`
-      <article class="os ${fin?'concluido cinza':(o.status==='atendimento'?'atend':o.status==='peca'?'peca':c)}">
-        <div class="l1"><b>${esc(o.os)}</b>${o.origem==='concessionaria'?'<span class="bd">Concessionária</span>':''}<span class="d">${fin?'Concluída':txt(n)}</span></div>
+      <article class="os ${fin?'concluido '+(tipoFech(o)==='auto'?'fauto':'fman'):(o.status==='atendimento'?'atend':o.status==='peca'?'peca':c)}">
+        <div class="l1"><b>${esc(o.os)}</b>${o.origem==='concessionaria'?'<span class="bd">Concessionária</span>':''}<span class="d">${fin?(tipoFech(o)==='auto'?'Concluída (auto)':'Concluída (manual)'):txt(n)}</span></div>
         <p>${esc(o.desc)}</p>
         <dl><div><dt>Frota</dt><dd>${esc(o.frota)}</dd></div><div><dt>Km</dt><dd>${esc(o.km)||'–'}</dd></div><div><dt>Aberta em</dt><dd>${esc(o.abertura)}</dd></div><div><dt>VIN</dt><dd>${esc(o.vin)}</dd></div>${o.placa?`<div><dt>Placa</dt><dd>${esc(o.placa)}</dd></div>`:''}</dl>
-        ${fin?`<div class="fim"><b>Técnicos:</b> ${esc((o.tecnicos||[]).join(', ')||'–')}<br><b>Obs.:</b> ${esc(o.obs)||'–'}</div><button class="ghost" data-fin="${esc(o.os)}">Editar finalização</button>`:''}
+        ${fin?`<div class="fim"><span class="tf ${tipoFech(o)==='auto'?'ta':'tm'}">${tipoFech(o)==='auto'?'Fechada automaticamente':'Fechada manualmente'}</span><br><b>Técnicos:</b> ${esc((o.tecnicos||[]).join(', ')||'–')}<br><b>Obs.:</b> ${esc(o.obs)||'–'}</div><button class="ghost" data-fin="${esc(o.os)}">Editar finalização</button>`:''}
         ${fin?'':`<textarea class="ob" data-ob="${esc(o.os)}" rows="2" placeholder="Observação (ex.: aguardando peça)" aria-label="Observação da ${esc(o.os)}">${esc(o.obs)}</textarea>`}
         <select data-os="${esc(o.os)}" aria-label="Status da ${esc(o.os)}">${Object.entries(ST).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}</select>
       </article>`).join('')}</div>
-  </section>`).join('')||'<p class="vazio">Nada para mostrar com estes filtros.</p>';
+  </section>`)}).join('')||'<p class="vazio">Nada para mostrar com estes filtros.</p>';
   $('#totN').textContent=abertas;graficos(tot);if(document.body.dataset.aba==='hist')renderHist();
 }
 
@@ -262,10 +274,11 @@ $('#grid').addEventListener('change',e=>{
   if(t){const o=data.find(x=>x.os===t.dataset.ob);if(o){o.obs=t.value.trim();save()}return}
   const s=e.target.closest('select[data-os]');if(!s)return;
   if(s.value==='concluido')return finalizar(s.dataset.os);
-  const o=data.find(x=>x.os===s.dataset.os);if(o){o.status=s.value;save();render()}});
+  const o=data.find(x=>x.os===s.dataset.os);if(o){o.status=s.value;delete o.fechamento;save();render()}});
 $('#graf').addEventListener('click',e=>{const b=e.target.closest('[data-w]');if(b){ano+=+b.dataset.w;render()}});
 $('#sum').addEventListener('click',e=>{const b=e.target.closest('[data-cor]');if(b){corSel=corSel===b.dataset.cor?null:b.dataset.cor;render()}});
 $('#fSit').onchange=render;
+$('#fQ').oninput=render;
 $('#fTec').onchange=()=>{if($('#fTec').value&&$('#fSit').value==='pend')$('#fSit').value='todas';render()};
 dlg.addEventListener('close',render);
 
@@ -280,7 +293,7 @@ function finalizar(n){
   $('#bOk').onclick=()=>{
     const t=[...dlg.querySelectorAll('.tecs input:checked')].map(i=>i.value);
     if(!t.length){$('#er').textContent='Marque pelo menos um técnico.';return}
-    Object.assign(o,{status:'concluido',tecnicos:t,obs:$('#obs').value.trim()});save();dlg.close()};
+    Object.assign(o,{status:'concluido',fechamento:'manual',tecnicos:t,obs:$('#obs').value.trim()});save();dlg.close()};
 }
 
 $('#bTec').onclick=()=>{
@@ -338,29 +351,32 @@ async function importar(files){
 const COLS=[['os','OS'],['cliente','Cliente'],['frota','Frota'],['km','Km'],['abertura','Abertura'],['vin','VIN'],['placa','Placa'],['desc','Descrição']];
 function conferir(rows,urls,erros=[]){
   const falt=data.filter(o=>pend(o)&&o.origem!=='concessionaria'&&!rows.some(r=>r.os===o.os));
+  const jaConc=rows.filter(r=>data.some(o=>o.os===r.os&&!pend(o))).map(r=>r.os);
   dlg.innerHTML=`<h2>Conferir antes de salvar</h2>${erros.length?`<div class="err">${erros.map(e=>`<p>${esc(e)}</p>`).join('')}</div>`:''}${rows.length?'':'<p class="err"><b>Nenhuma OS foi lida, então não há nada para salvar.</b> Feche e tente de novo em alguns minutos, ou use a importação por planilha ou por código.</p>'}
   <div class="thumbs">${urls.map(u=>`<a href="${u}" target="_blank"><img src="${u}" alt="Imagem do relatório"></a>`).join('')}</div>
   <div class="tw"><table><thead><tr>${COLS.map(c=>`<th>${c[1]}</th>`).join('')}<th></th></tr></thead>
   <tbody>${rows.map(r=>`<tr>${COLS.map(([k])=>`<td><input type="text" data-k="${k}" value="${esc(r[k])}"></td>`).join('')}<td><button class="ghost" data-del aria-label="Remover linha">×</button></td></tr>`).join('')}</tbody></table></div>
   ${rows.length&&falt.length?`<label class="auto"><input type="checkbox" id="auto" checked><span>Fechar automaticamente ${falt.length} OS pendentes que não aparecem neste relatório: ${esc(falt.map(o=>o.os).join(', '))}. Desmarque se você importou só parte do relatório.</span></label>`:''}
+  ${jaConc.length?`<label class="auto"><input type="checkbox" id="reabre"><span><b>${jaConc.length} OS desta lista estão como concluídas no painel</b>, por isso não contam como abertas: ${esc(jaConc.join(', '))}. Marque para reabrir (voltam para Aguardando). Desmarcado, elas continuam concluídas.</span></label>`:''}
   <p class="err" id="sErr"></p><div class="bar"><button class="ghost" id="bCan">Cancelar</button><button id="bSave" ${rows.length?'':'disabled'}>Salvar</button></div>`;
   dlg.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>b.closest('tr').remove());
   $('#bCan').onclick=()=>dlg.close();
   $('#bSave').onclick=()=>{
     try{
-      const nums=new Set();let novas=0,atual=0,fech=0;
+      const nums=new Set();let novas=0,atual=0,fech=0,reab=0,mant=0;const hoje=new Date().toLocaleDateString('pt-BR');
       dlg.querySelectorAll('tbody tr').forEach(tr=>{
         const r={};tr.querySelectorAll('input').forEach(i=>r[i.dataset.k]=i.value.trim());
         if(!r.os)return;nums.add(r.os);
         const ex=data.find(o=>o.os===r.os);
-        if(ex){Object.keys(r).forEach(k=>{if(r[k]!==''||!ex[k])ex[k]=r[k]});atual++}
+        if(ex){Object.keys(r).forEach(k=>{if(r[k]!==''||!ex[k])ex[k]=r[k]});atual++;
+          if(!pend(ex)){if($('#reabre')?.checked){ex.status='aguardando';delete ex.fechamento;ex.obs=(ex.obs?ex.obs+' | ':'')+'Reaberta na importação em '+hoje;reab++}else mant++}}
         else{data.push({...r,status:'aguardando',tecnicos:[],obs:''});novas++}
       });
       if(!nums.size){$('#sErr').textContent='Nenhuma OS para salvar.';return}
       if($('#auto')?.checked){const h=new Date().toLocaleDateString('pt-BR');
-        data.forEach(o=>{if(pend(o)&&o.origem!=='concessionaria'&&!nums.has(o.os)){o.status='concluido';o.obs=(o.obs?o.obs+' | ':'')+'Fechado automaticamente em '+h;fech++}})}
+        data.forEach(o=>{if(pend(o)&&o.origem!=='concessionaria'&&!nums.has(o.os)){o.status='concluido';o.fechamento='auto';o.obs=(o.obs?o.obs+' | ':'')+'Fechado automaticamente em '+h;fech++}})}
       save();dlg.close();aba('painel');render();
-      toast(`${novas} OS nova(s), ${atual} atualizada(s)`+(fech?`, ${fech} fechada(s) automaticamente`:'')+'.');
+      toast(`${novas} OS nova(s), ${atual} atualizada(s)`+(fech?`, ${fech} fechada(s) automaticamente`:'')+(mant?`, ${mant} já concluída(s) mantida(s) como concluída`:'')+(reab?`, ${reab} reaberta(s)`:'')+'.');
     }catch(e){$('#sErr').textContent='Erro ao salvar: '+e.message}
   };
 }
@@ -458,7 +474,7 @@ $('#bImpD').onclick=()=>{
   dlg.querySelector('.imp').onclick=e=>{const b=e.target.closest('[data-i]');if(b){dlg.close();$('#'+b.dataset.i).click()}};
 };
 // ---------- relatório personalizável ----------
-const RC=[['os','OS',o=>o.os],['gar','Garagem',o=>garagem(o.cliente)],['frota','Frota',o=>o.frota],['km','Km',o=>o.km],['ab','Abertura',o=>o.abertura],['dias','Dias úteis',o=>dias(o)??''],['pri','Prioridade',o=>pend(o)?cor(dias(o)):'concluída'],['vin','VIN',o=>o.vin],['pla','Placa',o=>o.placa||''],['desc','Descrição',o=>o.desc],['st','Status',o=>ST[o.status]||o.status],['tec','Técnicos',o=>(o.tecnicos||[]).join(', ')],['obs','Observação',o=>o.obs],['orig','Origem',o=>o.origem==='concessionaria'?'Concessionária':'BYD']];
+const RC=[['os','OS',o=>o.os],['gar','Garagem',o=>garagem(o.cliente)],['frota','Frota',o=>o.frota],['km','Km',o=>o.km],['ab','Abertura',o=>o.abertura],['dias','Dias úteis',o=>dias(o)??''],['pri','Prioridade',o=>pend(o)?cor(dias(o)):'concluída'],['vin','VIN',o=>o.vin],['pla','Placa',o=>o.placa||''],['desc','Descrição',o=>o.desc],['st','Status',o=>ST[o.status]||o.status],['tec','Técnicos',o=>(o.tecnicos||[]).join(', ')],['obs','Observação',o=>o.obs],['orig','Origem',o=>o.origem==='concessionaria'?'Concessionária':'BYD'],['fech','Fechamento',o=>pend(o)?'':(tipoFech(o)==='auto'?'Automático':'Manual')]];
 $('#bRel').onclick=()=>{
   const gars=[...new Set([...GAR,...data.map(o=>garagem(o.cliente))])];
   const ck=(n,v,l)=>`<label class="ck"><input type="checkbox" name="${n}" value="${esc(v)}" checked> ${esc(l)}</label>`;
@@ -565,11 +581,11 @@ function renderHist(){
   const ab=l.filter(pend).length;
   $('#hRes').innerHTML=`<div class="hh"><b>${l.length}</b> OS encontradas: <b>${ab}</b> pendentes e <b>${l.length-ab}</b> concluídas.</div>
   <div class="hres">${l.map(o=>{const n=dias(o),p=pend(o);return`
-    <article class="os ${!p?'concluido cinza':(o.status==='atendimento'?'atend':o.status==='peca'?'peca':cor(n))}">
+    <article class="os ${!p?'concluido '+(tipoFech(o)==='auto'?'fauto':'fman'):(o.status==='atendimento'?'atend':o.status==='peca'?'peca':cor(n))}">
       <div class="l1"><b>${esc(o.os)}</b>${o.origem==='concessionaria'?'<span class="bd">Concessionária</span>':''}<span class="st ${o.status}">${ST[o.status]||o.status}</span></div>
       <p>${esc(o.desc)}</p>
       <dl><div><dt>Frota</dt><dd>${esc(o.frota)}</dd></div><div><dt>Garagem</dt><dd>${esc(garagem(o.cliente))}</dd></div>${o.placa?`<div><dt>Placa</dt><dd>${esc(o.placa)}</dd></div>`:''}<div><dt>Aberta em</dt><dd>${esc(o.abertura)}${p?' ('+txt(n)+')':''}</dd></div><div><dt>VIN</dt><dd>${esc(o.vin)}</dd></div></dl>
-      ${!p?`<div class="fim"><b>Técnicos:</b> ${esc((o.tecnicos||[]).join(', ')||'–')}<br><b>Obs.:</b> ${esc(o.obs)||'–'}</div>`:(o.obs?`<div class="fim"><b>Obs.:</b> ${esc(o.obs)}</div>`:'')}
+      ${!p?`<div class="fim"><span class="tf ${tipoFech(o)==='auto'?'ta':'tm'}">${tipoFech(o)==='auto'?'Fechada automaticamente':'Fechada manualmente'}</span><br><b>Técnicos:</b> ${esc((o.tecnicos||[]).join(', ')||'–')}<br><b>Obs.:</b> ${esc(o.obs)||'–'}</div>`:(o.obs?`<div class="fim"><b>Obs.:</b> ${esc(o.obs)}</div>`:'')}
     </article>`}).join('')}</div>`;
 }
 $('#hQ').oninput=renderHist;

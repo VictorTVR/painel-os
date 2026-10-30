@@ -92,6 +92,10 @@ body[data-aba=hist] .v-painel,body[data-aba=nova] .v-painel{display:none!importa
 .v-hist label,.nf label{display:flex;flex-direction:column;font-size:13px;color:var(--mut);gap:3px}
 .nf{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:10px}
 .nf .full{grid-column:1/-1}
+.imp{display:grid;gap:10px;margin:10px 0}
+.imp button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;padding:14px 16px;background:#fff;color:var(--ink);border:2px solid var(--line);border-radius:10px}
+.imp button b{font-size:18px;color:var(--acc)}.imp button span{font-size:14px;color:var(--mut)}
+.imp button:hover{border-color:var(--acc)}
 .hf{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}.hf label{min-width:220px}
 .st{font-size:12px;font-weight:700;border-radius:10px;padding:1px 8px;color:#fff;background:var(--cinza)}
 .st.aguardando{background:#5d6c7a}.st.atendimento{background:var(--roxo)}.st.concluido{background:var(--verde)}.st.peca{background:var(--azul)}
@@ -107,8 +111,10 @@ body[data-aba=hist] .v-painel,body[data-aba=nova] .v-painel{display:none!importa
   <div class="top">
     <h1>OS em aberto</h1>
     <div class="acts">
-      <button id="bImp">Importar imagens</button>
+      <button id="bImpD">Importar dados</button>
+      <span hidden><button id="bImp">Importar imagens</button>
       <button id="bPla">Importar planilha</button>
+      <button id="bCol">Colar dados</button></span>
       <button id="bRel" class="ghost">Relatório</button>
       <button id="bTec" class="ghost">Técnicos</button>
       <button id="bSync" class="ghost">Sincronizar</button>
@@ -412,6 +418,37 @@ async function planilha(f){
     $('#bX2').onclick=()=>dlg.close();
   }
 }
+// ---------- Colar dados (CSV ou tabela copiada do Gemini) ----------
+$('#bCol').onclick=()=>{
+  dlg.innerHTML=`<h2>Colar dados</h2><p>Cole aqui o CSV ou a tabela que o Gemini gerou.</p>
+  <textarea id="cTx" rows="10" placeholder="OS;Cliente;Frota;Km;Abertura;VIN;Placa;Descrição"></textarea><p class="err" id="cEr"></p>
+  <div class="bar"><button class="ghost" id="cX">Cancelar</button><button id="cOk">Continuar</button></div>`;
+  dlg.showModal();
+  $('#cX').onclick=()=>dlg.close();
+  $('#cOk').onclick=()=>{
+    try{
+      const txt=$('#cTx').value.replace(/^\s*```\w*\s*/,'').replace(/\s*```\s*$/,'').trim();
+      const L=/^\|/.test(txt)
+        ?txt.split('\n').filter(l=>!/^[\s:|-]+$/.test(l)).map(l=>l.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim()))
+        :csvLinhas(txt);
+      const {rows}=linhasPlanilha(L);
+      if(!rows.length)throw new Error('nenhuma OS encontrada no texto colado.');
+      conferir(rows,[]);
+    }catch(e){$('#cEr').textContent='Não consegui ler: '+e.message}
+  };
+};
+// ---------- Importar dados (escolha do método) ----------
+$('#bImpD').onclick=()=>{
+  dlg.innerHTML=`<h2>Importar dados</h2><p>Escolha como você quer importar as OS.</p>
+  <div class="imp">
+    <button data-i="bImp"><b>Por imagem</b><span>Foto ou print do relatório, lido pelo Gemini</span></button>
+    <button data-i="bPla"><b>Por planilha</b><span>Arquivo Excel (.xlsx) ou CSV, no modelo planilha_base</span></button>
+    <button data-i="bCol"><b>Por código</b><span>Colar o CSV ou a tabela gerada pelo Gemini</span></button>
+  </div><div class="bar"><button class="ghost" id="iX">Cancelar</button></div>`;
+  dlg.showModal();
+  $('#iX').onclick=()=>dlg.close();
+  dlg.querySelector('.imp').onclick=e=>{const b=e.target.closest('[data-i]');if(b){dlg.close();$('#'+b.dataset.i).click()}};
+};
 // ---------- relatório personalizável ----------
 const RC=[['os','OS',o=>o.os],['gar','Garagem',o=>garagem(o.cliente)],['frota','Frota',o=>o.frota],['km','Km',o=>o.km],['ab','Abertura',o=>o.abertura],['dias','Dias úteis',o=>dias(o)??''],['pri','Prioridade',o=>pend(o)?cor(dias(o)):'concluída'],['vin','VIN',o=>o.vin],['pla','Placa',o=>o.placa||''],['desc','Descrição',o=>o.desc],['st','Status',o=>ST[o.status]||o.status],['tec','Técnicos',o=>(o.tecnicos||[]).join(', ')],['obs','Observação',o=>o.obs],['orig','Origem',o=>o.origem==='concessionaria'?'Concessionária':'BYD']];
 $('#bRel').onclick=()=>{

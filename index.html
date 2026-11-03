@@ -83,15 +83,26 @@ td input{width:100%;font:inherit;font-size:14px;padding:6px;border:1px solid var
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .tabs button{background:transparent;color:var(--acc);border:1px solid var(--acc)}
 .tabs button.on{background:var(--acc);color:#fff}
-.v-hist,.v-nova{display:none}
-body[data-aba=hist] .v-hist,body[data-aba=nova] .v-nova{display:block}
-body[data-aba=hist] .v-painel,body[data-aba=nova] .v-painel{display:none!important}
+.v-hist,.v-nova,.v-reg{display:none}
+body[data-aba=hist] .v-hist,body[data-aba=nova] .v-nova,body[data-aba=reg] .v-reg{display:block}
+body[data-aba=hist] .v-painel,body[data-aba=nova] .v-painel,body[data-aba=reg] .v-painel{display:none!important}
 .bd{font-size:11px;font-weight:600;background:#e4eaef;border-radius:10px;padding:1px 8px;margin-left:6px}
 .hh{background:var(--card);border-radius:10px;padding:12px 14px;margin-top:12px}
 .hres{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));margin-top:12px}
 .v-hist label,.nf label{display:flex;flex-direction:column;font-size:13px;color:var(--mut);gap:3px}
 .nf{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:10px}
 .nf .full{grid-column:1/-1}
+#login{position:fixed;inset:0;background:var(--bg);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px}
+body.in #login{display:none}
+.lbox{background:#fff;border-radius:14px;padding:24px;width:min(380px,100%);display:grid;gap:12px}
+.lbox h1{font-size:24px}.lbox p{margin:0;color:var(--mut)}
+.lbox label{display:flex;flex-direction:column;font-size:13px;color:var(--mut);gap:3px}
+.who{font-size:14px;color:var(--mut);display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.who button{padding:4px 10px}
+.aj{display:grid;gap:8px;margin:10px 0}.aj button{text-align:left;padding:14px 16px}
+.ur{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.ur small{color:var(--mut)}
+.pm{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px;margin:10px 0}
 .gh{grid-column:1/-1;margin:14px 0 2px;font-size:18px;padding:8px 12px;border-radius:8px}
 .gh.ga{background:#fff1dc;color:#9a5300;border-left:6px solid #e8890c}
 .gh.gm{background:#e2f4e8;color:#1d6b3d;border-left:6px solid var(--verde)}
@@ -122,13 +133,15 @@ body[data-aba=hist] .v-painel,body[data-aba=nova] .v-painel{display:none!importa
       <button id="bPla">Importar planilha</button>
       <button id="bCol">Colar dados</button></span>
       <button id="bRel" class="ghost">Relatório</button>
-      <button id="bTec" class="ghost">Técnicos</button>
-      <button id="bSync" class="ghost">Sincronizar</button>
-      <button id="bKey" class="ghost">Chave Gemini</button>
+      <button id="bAju" class="ghost">Ajustes</button>
+      <span hidden><button id="bTec">Técnicos</button>
+      <button id="bSync">Sincronizar</button>
+      <button id="bKey">Chave Gemini</button></span>
     </div>
   </div>
+  <div class="who" id="who"></div>
   <div class="sync" id="sync"></div>
-  <nav class="tabs"><button data-aba="painel" class="on">Painel</button><button data-aba="hist">Histórico do veículo</button><button data-aba="nova">Nova OS</button></nav>
+  <nav class="tabs"><button data-aba="painel" class="on">Painel</button><button data-aba="hist">Histórico do veículo</button><button data-aba="nova">Nova OS</button><button data-aba="reg">Registro</button></nav>
   <div class="tot v-painel" aria-live="polite"><b id="totN">0</b><span>OS abertas</span></div>
   <div class="sum v-painel" id="sum"></div>
   <div class="flt v-painel">
@@ -163,15 +176,29 @@ body[data-aba=hist] .v-painel,body[data-aba=nova] .v-painel{display:none!importa
   </div>
   <div class="bar"><span id="nMsg"></span><button id="nAdd">Adicionar OS</button></div>
 </section>
+<section id="vReg" class="v-reg wrap">
+  <h2>Registro de alterações</h2>
+  <div class="hf"><label>Usuário<select id="rgU"></select></label><label>OS<input type="text" id="rgQ" placeholder="Código da OS" autocomplete="off"></label><label>De<input type="date" id="rgDe"></label><label>Até<input type="date" id="rgAte"></label></div>
+  <div id="rgRes"></div>
+</section>
 <input type="file" id="fIn" accept="image/*" multiple hidden>
 <input type="file" id="fPla" accept=".xlsx,.xls,.csv,.tsv,.txt" hidden>
+<div id="login" role="dialog" aria-modal="true" aria-label="Entrar">
+  <div class="lbox"><h1>OS em aberto</h1><p>Pós-venda BYD. Entre com o seu usuário.</p>
+    <label>Usuário<select id="lUser"></select></label>
+    <label>Senha<input type="password" id="lPw" autocomplete="current-password"></label>
+    <p class="err" id="lErr"></p>
+    <button id="lOk">Entrar</button>
+    <button class="ghost" id="lCfg">Configurar este aparelho</button>
+  </div>
+</div>
 <div id="toast" role="status"></div>
 <dialog id="dlg"></dialog>
 
 <script>
 const KEY='osbyd.v1',KK='osbyd.gemini',KT='osbyd.tec',MODEL='gemini-3.8-flash';
 const chave=()=>localStorage.getItem(KK)||'';
-const GAR=['AutoBless','AlfaRodobus','MobiBrasil','MoveBuss','CampoBelo','TransWolf','Pessêgo','Express','TransPass','GatoPreto','SantaBrigda','SusanTour','KBPX','NorteBuss G1','NorteBuss G2'];
+let GAR=['AutoBless','AlfaRodobus','MobiBrasil','MoveBuss','CampoBelo','TransWolf','Pessêgo','Express','TransPass','GatoPreto','SantaBrigda','SusanTour','KBPX','NorteBuss G1','NorteBuss G2'];
 const TEC0=['Victor Tavares','Mario','Alex','Yan','Danilo','José Carlos','Ricardo','Roberto','Alexon','Angel','Carlos','Fell','Yeferson','Alessandro','Fábrica'];
 const SEED=[];
 const ST={aguardando:'Aguardando',atendimento:'Em atendimento',peca:'Aguardando peça',concluido:'Concluído'};
@@ -187,7 +214,20 @@ try{data=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!Array.isArray(data))data=SEED;
 try{tecs=JSON.parse(localStorage.getItem(KT))}catch(e){}
 if(!Array.isArray(tecs))tecs=TEC0;
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));localStorage.setItem(KT,JSON.stringify(tecs));if(gh)localStorage.setItem('osbyd.sujo','1')}catch(e){}push()};
+const KC='osbyd.cfg';let cfg=null,usuario=null;
+try{cfg=JSON.parse(localStorage.getItem(KC))}catch(e){}
+if(cfg){if(Array.isArray(cfg.gars)&&cfg.gars.length)GAR=cfg.gars;if(Array.isArray(cfg.tecs))tecs=cfg.tecs}
+const can=k=>!!(usuario&&usuario.perms&&usuario.perms[k]);
+let snap=new Map();
+const sj=o=>JSON.stringify({...o,at:0});
+const snapshot=()=>{snap=new Map(data.map(o=>[o.os,sj(o)]))};
+const gravaLocal=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));localStorage.setItem(KT,JSON.stringify(tecs));if(cfg)localStorage.setItem(KC,JSON.stringify(cfg))}catch(e){}};
+const save=()=>{
+  const t=Date.now();data.forEach(o=>{if(snap.get(o.os)!==sj(o))o.at=t});snapshot();
+  if(cfg&&(JSON.stringify(cfg.tecs)!==JSON.stringify(tecs)||JSON.stringify(cfg.gars)!==JSON.stringify(GAR))){cfg.tecs=tecs;cfg.gars=GAR;cfg.cat=t}
+  gravaLocal();push();
+};
+snapshot();
 const pend=o=>o.status!=='concluido';
 const tipoFech=o=>o.fechamento||(/fechado automaticamente/i.test(o.obs||'')?'auto':'manual');
 const subseq=(a,b)=>{let i=0;for(const ch of b)if(ch===a[i])i++;return i===a.length};
@@ -202,13 +242,13 @@ const txt=n=>n==null?'sem data':n===1?'1 dia útil':n+' dias úteis';
 function fillTec(){const v=$('#fTec').value;$('#fTec').innerHTML='<option value="">Todos</option>'+tecs.map(t=>`<option ${t===v?'selected':''}>${esc(t)}</option>`).join('')}
 
 function render(){
-  const sit=$('#fSit').value,tec=$('#fTec').value,q=norm($('#fQ').value),filtrando=tec||sit==='conc'||corSel||q,concMode=sit==='conc'&&!corSel&&!q;
+  const sit=can('concluidas')?$('#fSit').value:'pend',tec=$('#fTec').value,q=norm($('#fQ').value),filtrando=tec||sit==='conc'||corSel||q,concMode=sit==='conc'&&!corSel&&!q;
   const cnt={verde:0,amarelo:0,vermelho:0,peca:0},g={},tot={};let abertas=0;
   GAR.forEach(n=>g[n]=[]);
   data.forEach(o=>{
     const n=dias(o),c=cor(n),fin=!pend(o),k=garagem(o.cliente);
     if(!fin){abertas++;if(cnt[c]!==undefined)cnt[c]++;if(o.status==='peca')cnt.peca++;tot[k]=(tot[k]||0)+1}
-    if((corSel?(fin||!(corSel==='peca'?o.status==='peca':c===corSel)):(!q&&((sit==='pend'&&fin)||(sit==='conc'&&!fin))))||(tec&&!(o.tecnicos||[]).includes(tec))||(q&&!achaOS(o,q)))return;
+    if((fin&&!can('concluidas'))||(corSel?(fin||!(corSel==='peca'?o.status==='peca':c===corSel)):(!q&&((sit==='pend'&&fin)||(sit==='conc'&&!fin))))||(tec&&!(o.tecnicos||[]).includes(tec))||(q&&!achaOS(o,q)))return;
     (g[concMode&&fin?(tipoFech(o)==='auto'?'1|':'2|')+k:k]??=[]).push({o,n,c,fin});
   });
   $('#sum').innerHTML=[['vermelho','mais de 5 dias úteis'],['amarelo','de 3 a 5 dias úteis'],['verde','até 2 dias úteis'],['peca','aguardando peça']]
@@ -234,9 +274,10 @@ function render(){
         <div class="l1"><b>${esc(o.os)}</b>${o.origem==='concessionaria'?'<span class="bd">Concessionária</span>':''}<span class="d">${fin?(tipoFech(o)==='auto'?'Concluída (auto)':'Concluída (manual)'):txt(n)}</span></div>
         <p>${esc(o.desc)}</p>
         <dl><div><dt>Frota</dt><dd>${esc(o.frota)}</dd></div><div><dt>Km</dt><dd>${esc(o.km)||'–'}</dd></div><div><dt>Aberta em</dt><dd>${esc(o.abertura)}</dd></div><div><dt>VIN</dt><dd>${esc(o.vin)}</dd></div>${o.placa?`<div><dt>Placa</dt><dd>${esc(o.placa)}</dd></div>`:''}</dl>
-        ${fin?`<div class="fim"><span class="tf ${tipoFech(o)==='auto'?'ta':'tm'}">${tipoFech(o)==='auto'?'Fechada automaticamente':'Fechada manualmente'}</span><br><b>Técnicos:</b> ${esc((o.tecnicos||[]).join(', ')||'–')}<br><b>Obs.:</b> ${esc(o.obs)||'–'}</div><button class="ghost" data-fin="${esc(o.os)}">Editar finalização</button>`:''}
-        ${fin?'':`<textarea class="ob" data-ob="${esc(o.os)}" rows="2" placeholder="Observação (ex.: aguardando peça)" aria-label="Observação da ${esc(o.os)}">${esc(o.obs)}</textarea>`}
-        <select data-os="${esc(o.os)}" aria-label="Status da ${esc(o.os)}">${Object.entries(ST).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}</select>
+        ${fin?`<div class="fim"><span class="tf ${tipoFech(o)==='auto'?'ta':'tm'}">${tipoFech(o)==='auto'?'Fechada automaticamente':'Fechada manualmente'}</span><br><b>Técnicos:</b> ${esc((o.tecnicos||[]).join(', ')||'–')}<br><b>Obs.:</b> ${esc(o.obs)||'–'}</div>${can('finalizar')?`<button class="ghost" data-fin="${esc(o.os)}">Editar finalização</button>`:''}`:''}
+        ${fin?'':`<textarea class="ob" data-ob="${esc(o.os)}" ${can('obs')?'':'readonly'} rows="2" placeholder="Observação (ex.: aguardando peça)" aria-label="Observação da ${esc(o.os)}">${esc(o.obs)}</textarea>`}
+        ${can('status')?`<select data-os="${esc(o.os)}" aria-label="Status da ${esc(o.os)}">${Object.entries(ST).filter(([k])=>k!=='concluido'||can('finalizar')||o.status==='concluido').map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}</select>`:`<span class="st ${o.status}">${ST[o.status]||o.status}</span>`}
+        ${can('registro')?`<button class="ghost" data-log="${esc(o.os)}">Registro da OS</button>`:''}
       </article>`).join('')}</div>
   </section>`)}).join('')||'<p class="vazio">Nada para mostrar com estes filtros.</p>';
   $('#totN').textContent=abertas;graficos(tot);if(document.body.dataset.aba==='hist')renderHist();
@@ -268,13 +309,17 @@ function graficos(tot){
 // ---------- eventos ----------
 $('#grid').addEventListener('click',e=>{
   const h=e.target.closest('[data-g]');if(h){const k=h.dataset.g;abertos.has(k)?abertos.delete(k):abertos.add(k);render();return}
-  const f=e.target.closest('[data-fin]');if(f)finalizar(f.dataset.fin)});
+  const f=e.target.closest('[data-fin]');if(f){if(can('finalizar'))finalizar(f.dataset.fin);return}
+  const lg=e.target.closest('[data-log]');if(lg)logOS(lg.dataset.log)});
 $('#grid').addEventListener('change',e=>{
   const t=e.target.closest('textarea[data-ob]');
-  if(t){const o=data.find(x=>x.os===t.dataset.ob);if(o){o.obs=t.value.trim();save()}return}
+  if(t){const o=data.find(x=>x.os===t.dataset.ob),v=t.value.trim();if(o&&can('obs')&&v!==(o.obs||'')){reg(o.os,'Observação alterada',o.obs||'',v,'');o.obs=v;save()}return}
   const s=e.target.closest('select[data-os]');if(!s)return;
-  if(s.value==='concluido')return finalizar(s.dataset.os);
-  const o=data.find(x=>x.os===s.dataset.os);if(o){o.status=s.value;delete o.fechamento;save();render()}});
+  const o=data.find(x=>x.os===s.dataset.os);
+  if(!o||!can('status')){render();return}
+  if(s.value==='concluido'){if(can('finalizar'))finalizar(o.os);else render();return}
+  const de=o.status,para=s.value;
+  motivo('Alterar status de '+o.os,m=>{o.status=para;delete o.fechamento;reg(o.os,'Status',ST[de],ST[para],m);save()})});
 $('#graf').addEventListener('click',e=>{const b=e.target.closest('[data-w]');if(b){ano+=+b.dataset.w;render()}});
 $('#sum').addEventListener('click',e=>{const b=e.target.closest('[data-cor]');if(b){corSel=corSel===b.dataset.cor?null:b.dataset.cor;render()}});
 $('#fSit').onchange=render;
@@ -282,18 +327,29 @@ $('#fQ').oninput=render;
 $('#fTec').onchange=()=>{if($('#fTec').value&&$('#fSit').value==='pend')$('#fSit').value='todas';render()};
 dlg.addEventListener('close',render);
 
+function motivo(titulo,ok){
+  dlg.innerHTML=`<h2>${esc(titulo)}</h2><label>Motivo da alteração (obrigatório)<textarea id="mot" rows="3"></textarea></label><p class="err" id="mE"></p>
+  <div class="bar"><button class="ghost" id="mC">Cancelar</button><button id="mOk">Confirmar</button></div>`;
+  dlg.showModal();$('#mot').focus();
+  $('#mC').onclick=()=>dlg.close();
+  $('#mOk').onclick=()=>{const m=$('#mot').value.trim();if(m.length<3){$('#mE').textContent='Escreva o motivo.';return}ok(m);dlg.close()};
+}
 function finalizar(n){
-  const o=data.find(x=>x.os===n),sel=o.tecnicos||[];
-  dlg.innerHTML=`<h2>Finalizar ${esc(n)}</h2><p>Quem fez esta OS? Marque um ou mais técnicos.</p>
+  const o=data.find(x=>x.os===n),sel=o.tecnicos||[],jaFin=!pend(o);
+  dlg.innerHTML=`<h2>${jaFin?'Editar finalização de':'Finalizar'} ${esc(n)}</h2><p>Quem fez esta OS? Marque um ou mais técnicos.</p>
   <div class="tecs">${tecs.map(t=>`<label><input type="checkbox" value="${esc(t)}" ${sel.includes(t)?'checked':''}> ${esc(t)}</label>`).join('')}</div>
-  <label>Observação<textarea id="obs" rows="3">${esc(o.obs)}</textarea></label><p class="err" id="er"></p>
-  <div class="bar"><button class="ghost" id="bC">Cancelar</button><button id="bOk">Finalizar</button></div>`;
+  <label>Observação<textarea id="obs" rows="2">${esc(o.obs)}</textarea></label>
+  <label>Motivo da alteração (obrigatório)<textarea id="mot" rows="2"></textarea></label><p class="err" id="er"></p>
+  <div class="bar"><button class="ghost" id="bC">Cancelar</button><button id="bOk">${jaFin?'Salvar':'Finalizar'}</button></div>`;
   dlg.showModal();
   $('#bC').onclick=()=>dlg.close();
   $('#bOk').onclick=()=>{
-    const t=[...dlg.querySelectorAll('.tecs input:checked')].map(i=>i.value);
-    if(!t.length){$('#er').textContent='Marque pelo menos um técnico.';return}
-    Object.assign(o,{status:'concluido',fechamento:'manual',tecnicos:t,obs:$('#obs').value.trim()});save();dlg.close()};
+    const tt=[...dlg.querySelectorAll('.tecs input:checked')].map(i=>i.value),m=$('#mot').value.trim();
+    if(!tt.length){$('#er').textContent='Marque pelo menos um técnico.';return}
+    if(m.length<3){$('#er').textContent='Escreva o motivo.';return}
+    const de=o.status;
+    Object.assign(o,{status:'concluido',fechamento:'manual',tecnicos:tt,obs:$('#obs').value.trim()});
+    reg(o.os,jaFin?'Finalização editada':'Finalizada',ST[de],'Concluído · técnicos: '+tt.join(', '),m);save();dlg.close()};
 }
 
 $('#bTec').onclick=()=>{
@@ -309,7 +365,7 @@ $('#bTec').onclick=()=>{
 // ---------- Importação por imagem (Gemini) ----------
 const PROMPT='Esta imagem é uma tabela de ordens de serviço. Extraia TODAS as linhas. Responda somente com um array JSON de objetos com as chaves: os, cliente, frota, km, abertura (formato DD/MM/AAAA), vin (17 caracteres, junte as quebras de linha), placa (somente se existir uma coluna de placa), descricao (apenas o texto em português, junte as quebras de linha). Use null quando o campo estiver vazio ou escrito "null". Não invente dados.';
 $('#bKey').onclick=()=>{const k=prompt('Cole sua chave da API do Gemini (aistudio.google.com/apikey):',localStorage.getItem(KK)||'');if(k!==null){localStorage.setItem(KK,k.trim());push()}};
-$('#bImp').onclick=()=>{if(!chave()){$('#bKey').click();if(!chave())return}$('#fIn').click()};
+$('#bImp').onclick=()=>{if(!chave()){mestre(()=>$('#bKey').click());return}$('#fIn').click()};
 $('#fIn').onchange=e=>{const f=[...e.target.files];e.target.value='';if(f.length)importar(f)};
 const b64=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]);r.onerror=no;r.readAsDataURL(f)});
 let modelos=null;
@@ -361,7 +417,7 @@ function conferir(rows,urls,erros=[]){
   <p class="err" id="sErr"></p><div class="bar"><button class="ghost" id="bCan">Cancelar</button><button id="bSave" ${rows.length?'':'disabled'}>Salvar</button></div>`;
   dlg.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>b.closest('tr').remove());
   $('#bCan').onclick=()=>dlg.close();
-  $('#bSave').onclick=()=>{
+  $('#bSave').onclick=()=>{if(!can('importar'))return;
     try{
       const nums=new Set();let novas=0,atual=0,fech=0,reab=0,mant=0;const hoje=new Date().toLocaleDateString('pt-BR');
       dlg.querySelectorAll('tbody tr').forEach(tr=>{
@@ -369,13 +425,13 @@ function conferir(rows,urls,erros=[]){
         if(!r.os)return;nums.add(r.os);
         const ex=data.find(o=>o.os===r.os);
         if(ex){Object.keys(r).forEach(k=>{if(r[k]!==''||!ex[k])ex[k]=r[k]});atual++;
-          if(!pend(ex)){if($('#reabre')?.checked){ex.status='aguardando';delete ex.fechamento;ex.obs=(ex.obs?ex.obs+' | ':'')+'Reaberta na importação em '+hoje;reab++}else mant++}}
+          if(!pend(ex)){if($('#reabre')?.checked){reg(ex.os,'Status','Concluído','Aguardando','Reaberta na importação');ex.status='aguardando';delete ex.fechamento;ex.obs=(ex.obs?ex.obs+' | ':'')+'Reaberta na importação em '+hoje;reab++}else mant++}}
         else{data.push({...r,status:'aguardando',tecnicos:[],obs:''});novas++}
       });
       if(!nums.size){$('#sErr').textContent='Nenhuma OS para salvar.';return}
       if($('#auto')?.checked){const h=new Date().toLocaleDateString('pt-BR');
-        data.forEach(o=>{if(pend(o)&&o.origem!=='concessionaria'&&!nums.has(o.os)){o.status='concluido';o.fechamento='auto';o.obs=(o.obs?o.obs+' | ':'')+'Fechado automaticamente em '+h;fech++}})}
-      save();dlg.close();aba('painel');render();
+        data.forEach(o=>{if(pend(o)&&o.origem!=='concessionaria'&&!nums.has(o.os)){reg(o.os,'Status',ST[o.status],'Concluído','Fechamento automático na importação');o.status='concluido';o.fechamento='auto';o.obs=(o.obs?o.obs+' | ':'')+'Fechado automaticamente em '+h;fech++}})}
+      reg('—','Importação','',`${novas} novas, ${atual} atualizadas${fech?', '+fech+' fechadas automaticamente':''}`,'');save();dlg.close();aba('painel');render();
       toast(`${novas} OS nova(s), ${atual} atualizada(s)`+(fech?`, ${fech} fechada(s) automaticamente`:'')+(mant?`, ${mant} já concluída(s) mantida(s) como concluída`:'')+(reab?`, ${reab} reaberta(s)`:'')+'.');
     }catch(e){$('#sErr').textContent='Erro ao salvar: '+e.message}
   };
@@ -511,9 +567,9 @@ $('#bRel').onclick=()=>{
   };
   dlg.showModal();
 };
-// ---------- sincronização (GitHub) ----------
+// ---------- sincronização (GitHub) com mescla por OS ----------
 const KG='osbyd.gh';
-let gh=null,tPush=null,tRetry=null;
+let gh=null,tPush=null,tRetry=null,sincronizando=false,denovo=false;
 try{gh=JSON.parse(localStorage.getItem(KG))}catch(e){}
 const enc=s=>btoa(unescape(encodeURIComponent(s))),dec=s=>decodeURIComponent(escape(atob(s.replace(/\s/g,''))));
 const gUrl=()=>`https://api.github.com/repos/${gh.repo}/contents/dados.json`;
@@ -521,50 +577,66 @@ const gHd=()=>({Authorization:'Bearer '+gh.token,Accept:'application/vnd.github+
 function setSync(m,erro){const e=$('#sync');e.textContent=m;e.style.color=erro?'var(--vermelho)':'var(--mut)'}
 const msg=e=>/failed to fetch|network/i.test(e.message)?'sem conexão com o GitHub':e.message;
 const hora=()=>'Sincronizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-async function pull(){
+const carga=()=>({data,tecs,gk:localStorage.getItem(KK)||'',cfg});
+function mescla(rem){
+  const m=new Map((rem.data||[]).map(o=>[o.os,o]));
+  data.forEach(o=>{const r=m.get(o.os);if(!r||(o.at||0)>=(r.at||0))m.set(o.os,o)});
+  data=[...m.values()];
+  if(rem.gk&&!localStorage.getItem(KK))localStorage.setItem(KK,rem.gk);
+  const rc=rem.cfg;if(!rc)return;
+  if(!cfg)cfg={users:[],gars:GAR,tecs,master:null,log:[],cat:0};
+  const u=new Map((rc.users||[]).map(x=>[x.id,x]));
+  (cfg.users||[]).forEach(x=>{const r=u.get(x.id);if(!r||(x.at||0)>(r.at||0))u.set(x.id,x)});
+  cfg.users=[...u.values()];
+  if((rc.cat||0)>(cfg.cat||0)){cfg.gars=rc.gars||cfg.gars;cfg.tecs=rc.tecs||cfg.tecs;cfg.master=rc.master??null;cfg.cat=rc.cat;GAR=cfg.gars;tecs=cfg.tecs}
+  const l=new Map((rc.log||[]).map(x=>[x.id,x]));(cfg.log||[]).forEach(x=>l.set(x.id,x));
+  cfg.log=[...l.values()].sort((a,b)=>a.t-b.t).slice(-2000);
+}
+async function sync(){
   if(!gh)return;
-  if(localStorage.getItem('osbyd.sujo')==='1'){setSync('Enviando alterações pendentes…');push(true);return}
+  if(sincronizando){denovo=true;return}
+  sincronizando=true;
   try{
     const r=await fetch(gUrl()+'?t='+Date.now(),{headers:gHd()});
-    if(r.status===404){if(data.length)push(true);else setSync('Conectado. Ainda sem dados no repositório.');return}
-    if(!r.ok)throw new Error(r.status===401?'token inválido':r.status===403?'sem permissão':'erro '+r.status);
-    const d=JSON.parse(dec((await r.json()).content));
-    if(!Array.isArray(d.data))throw new Error('arquivo de dados inválido');
-    if(!d.data.length&&data.length){push(true);return}
-    data=d.data;if(Array.isArray(d.tecs))tecs=d.tecs;
-    if(d.gk&&!localStorage.getItem(KK))localStorage.setItem(KK,d.gk);
-    localStorage.setItem(KEY,JSON.stringify(data));localStorage.setItem(KT,JSON.stringify(tecs));
-    fillTec();render();setSync(hora());
-  }catch(e){setSync('Sem sincronização: '+msg(e),1)}
+    let sha=null,rem=null;
+    if(r.ok){const j=await r.json();sha=j.sha;rem=JSON.parse(dec(j.content))}
+    else if(r.status!==404)throw new Error(r.status===401?'token inválido':r.status===403?'sem permissão':'erro '+r.status);
+    if(rem)mescla(rem);
+    if(!cfg)await semeia();
+    snapshot();gravaLocal();
+    const novo=JSON.stringify(carga());
+    if(!rem||JSON.stringify(rem)!==novo){
+      const body={message:'Atualização do painel',content:enc(novo)};if(sha)body.sha=sha;
+      const w=await fetch(gUrl(),{method:'PUT',headers:{...gHd(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(!w.ok)throw new Error(w.status===409?'conflito de gravação':w.status===401?'token inválido':w.status===403?'sem permissão':'erro '+w.status);
+    }
+    if(usuario){const nu=cfg.users.find(x=>x.id===usuario.id);if(!nu||!nu.ativo||nu.removido){sincronizando=false;return sai()}usuario=nu;applyUI()}else fillLogin();
+    fillTec();setSync(hora());
+    const ae=document.activeElement;if(!(ae&&ae.closest&&ae.closest('#grid')))render();
+  }catch(e){
+    setSync('Sem sincronização ('+msg(e)+'). Alterações salvas neste aparelho; tentando de novo em 30 s…',1);
+    clearTimeout(tRetry);tRetry=setTimeout(sync,30000);
+  }finally{sincronizando=false;if(denovo){denovo=false;setTimeout(sync,300)}}
 }
-function push(agora){clearTimeout(tPush);tPush=setTimeout(enviar,agora===true?0:800)}
-async function enviar(){
-  if(!gh)return;
-  try{
-    const g=await fetch(gUrl()+'?t='+Date.now(),{headers:gHd()});
-    if(!g.ok&&g.status!==404)throw new Error('erro '+g.status);
-    const sha=g.ok?(await g.json()).sha:null;
-    const body={message:'Atualização do painel',content:enc(JSON.stringify({data,tecs,gk:localStorage.getItem(KK)||''}))};
-    if(sha)body.sha=sha;
-    const r=await fetch(gUrl(),{method:'PUT',headers:{...gHd(),'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!r.ok)throw new Error(r.status===401?'token inválido':r.status===403?'sem permissão':'erro '+r.status);
-    localStorage.removeItem('osbyd.sujo');setSync(hora());
-  }catch(e){setSync('Sem sincronização ('+msg(e)+'). Suas alterações estão salvas aqui; tentando de novo em 30 s…',1);clearTimeout(tRetry);tRetry=setTimeout(()=>push(true),30000)}
-}
+const pull=sync;
+function push(agora){clearTimeout(tPush);tPush=setTimeout(sync,agora===true?0:800)}
 $('#bSync').onclick=()=>{
   const r=prompt('Repositório PRIVADO dos dados, no formato usuario/repositorio:',gh?.repo||'');if(!r)return;
   const k=prompt('Token do GitHub (permissão Contents: Read and write, só neste repositório):',gh?.token||'');if(!k)return;
-  gh={repo:r.trim(),token:k.trim()};localStorage.setItem(KG,JSON.stringify(gh));pull();
+  gh={repo:r.trim(),token:k.trim()};localStorage.setItem(KG,JSON.stringify(gh));sync();
 };
-window.addEventListener('online',()=>pull());
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!dlg.open)pull()});
-if(!gh)setSync('Sincronização desligada. Clique em “Sincronizar”.');
+window.addEventListener('online',()=>sync());
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!dlg.open)sync()});
+setInterval(()=>{if(!document.hidden&&!dlg.open&&gh)sync()},60000);
+if(!gh)setSync('Aparelho sem sincronização. Use “Configurar este aparelho”.');
+
 // ---------- abas, histórico do veículo e nova OS ----------
 function aba(n){
   document.body.dataset.aba=n;
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.aba===n));
   if(n==='hist')renderHist();
   if(n==='nova')prepNova();
+  if(n==='reg')renderReg();
 }
 document.querySelector('.tabs').onclick=e=>{const b=e.target.closest('[data-aba]');if(b)aba(b.dataset.aba)};
 const HC={
@@ -597,7 +669,7 @@ function prepNova(){
   $('#nCodL').textContent=`Código (vira ${PREFIXO}-código; vazio = numera sozinho)`;
   const d=new Date();if(!$('#nAb').value)$('#nAb').value=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 }
-$('#nAdd').onclick=()=>{
+$('#nAdd').onclick=()=>{if(!can('nova'))return;
   const cod=$('#nCod').value.trim().toUpperCase().replace(PREFIXO,'').replace(/^[-\s]+/,''),m=$('#nMsg');
   const erro=t=>{m.textContent=t;m.className='err'};
   const n=Math.max(0,...data.filter(o=>o.origem==='concessionaria').map(o=>parseInt(String(o.os).replace(/\D/g,''))||0))+1;
@@ -608,23 +680,213 @@ $('#nAdd').onclick=()=>{
   if(!pd(ab))return erro('Informe a data de abertura.');
   if(!desc)return erro('Escreva a descrição.');
   data.push({os,cliente:$('#nGar').value,frota:fro,km:$('#nKm').value.trim(),abertura:ab,vin:$('#nVin').value.replace(/\s/g,'').toUpperCase(),placa:$('#nPla').value.replace(/[\s-]/g,'').toUpperCase(),desc,status:$('#nSt').value,tecnicos:[],obs:$('#nObs').value.trim(),origem:'concessionaria'});
-  save();['nCod','nFro','nKm','nVin','nPla','nDesc','nObs'].forEach(i=>$('#'+i).value='');
+  reg(os,'OS adicionada','','Concessionária · frota '+fro,'');save();['nCod','nFro','nKm','nVin','nPla','nDesc','nObs'].forEach(i=>$('#'+i).value='');
   m.textContent='OS '+os+' adicionada.';m.className='';render();
 };
 
-// ---------- senha (trava simples contra uso acidental) ----------
-const SENHA_HASH=3157640238026326;
+// ---------- usuários, login, permissões, ajustes e registro ----------
 const h53=(s,seed=0)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,c;i<s.length;i++){c=s.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677)}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)};
-function autoriza(f){
-  if(sessionStorage.getItem('osbyd.ok')==='1')return f();
-  dlg.innerHTML=`<h2>Senha</h2><label>Digite a senha para continuar<input type="password" id="sn" autocomplete="off"></label><p class="err" id="sne"></p>
-  <div class="bar"><button class="ghost" id="snC">Cancelar</button><button id="snOk">Entrar</button></div>`;
-  dlg.showModal();$('#sn').focus();
-  const ok=()=>{if(h53('osbyd|'+$('#sn').value)===SENHA_HASH){sessionStorage.setItem('osbyd.ok','1');dlg.close();f()}else $('#sne').textContent='Senha incorreta.'};
-  $('#snOk').onclick=ok;$('#sn').onkeydown=e=>{if(e.key==='Enter')ok()};$('#snC').onclick=()=>dlg.close();
+const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+const temSubtle=()=>!!(window.crypto&&crypto.subtle);
+async function mkHash(pw,salt){
+  salt=salt||hex(crypto.getRandomValues(new Uint8Array(16)));
+  if(temSubtle()){
+    const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+    const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:100000,hash:'SHA-256'},k,256);
+    return 'p1:'+salt+':'+hex(b);
+  }
+  return 'w:'+salt+':'+h53(salt+pw);
 }
-['bTec','bKey','bSync'].forEach(id=>{const f=$('#'+id).onclick;$('#'+id).onclick=()=>autoriza(f)});
-fillTec();render();aba('painel');pull();
+async function confere(pw,h){
+  const [tp,salt]=String(h||'').split(':');
+  if(tp==='w')return h==='w:'+salt+':'+h53(salt+pw);
+  if(tp==='p1'&&temSubtle())return h===await mkHash(pw,salt);
+  return false;
+}
+const MASTER_PADRAO=['p1:f42a0e02d6d3116994e7ee32ad390f45:774468335f2672f2590209164a0952fccad3ccdf99421290bdce613ecd974a66','w:58a65504ca931b7bd87961a15651403c:8810556570258697'];
+async function confereMestre(pw){for(const h of (cfg&&cfg.master?[cfg.master]:MASTER_PADRAO))if(await confere(pw,h))return true;return false}
+
+const PERMS=[['concluidas','Ver OS concluídas'],['status','Alterar status'],['finalizar','Finalizar OS'],['obs','Editar observação'],['nova','Adicionar OS'],['importar','Importar dados'],['historico','Histórico do veículo'],['relatorio','Gerar relatório'],['registro','Ver registro de alterações']];
+const MODELOS={tecnico:['Técnico (só vê OS abertas)',[]],residente:['Técnico residente',['concluidas','status','finalizar','obs','historico']],campo:['Técnico de campo',['concluidas','status','finalizar','obs','historico']],lider:['Líder / consultor (tudo)',PERMS.map(p=>p[0])]};
+const permsDe=ks=>Object.fromEntries(PERMS.map(([k])=>[k,ks.includes(k)]));
+const NOMES0=['Alex','Alexon','Akunna','Luiz Amutti','João Abreu','Victor Tavares','Mario Almeida','Jose Carlos','Alessandro','Ricardo','Roberto','Yeferson','Carlos Sedeño','Fell','Angel','Danilo','Yan Carlos'];
+const inicial=n=>n.trim()[0].toUpperCase()+'BYD2026';
+async function semeia(){
+  const tm=Date.now();
+  const users=await Promise.all(NOMES0.map(async n=>({id:'u_'+norm(n),nome:n,garagem:'',ativo:true,trocar:true,perms:permsDe(n==='Victor Tavares'?MODELOS.lider[1]:[]),hash:await mkHash(inicial(n)),at:tm})));
+  cfg={users,gars:GAR,tecs,master:null,log:[],cat:tm};gravaLocal();
+}
+function reg(os,ac,de,para,mot){
+  if(!cfg)return;
+  cfg.log.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),t:Date.now(),u:usuario?usuario.nome:'—',uid:usuario?usuario.id:'',os,ac,de:de||'',para:para||'',mot:mot||''});
+  if(cfg.log.length>2000)cfg.log=cfg.log.slice(-2000);
+}
+
+// ----- login -----
+let falhas=0,bloq=0;
+function fillLogin(){
+  const us=((cfg&&cfg.users)||[]).filter(u=>u.ativo&&!u.removido).sort((a,b)=>a.nome.localeCompare(b.nome));
+  $('#lUser').innerHTML=us.map(u=>`<option value="${esc(u.id)}">${esc(u.nome)}</option>`).join('');
+  $('#lCfg').style.display=gh?'none':'';
+  $('#lErr').textContent=us.length?'':'Aparelho ainda não configurado. Toque em “Configurar este aparelho”.';
+}
+$('#lOk').onclick=async()=>{
+  const u=((cfg&&cfg.users)||[]).find(x=>x.id===$('#lUser').value&&x.ativo&&!x.removido);
+  if(!u)return;
+  if(Date.now()<bloq){$('#lErr').textContent='Muitas tentativas. Aguarde alguns segundos.';return}
+  if(await confere($('#lPw').value,u.hash)){falhas=0;entra(u)}
+  else{falhas++;if(falhas>=5){bloq=Date.now()+30000;falhas=0}$('#lErr').textContent='Usuário ou senha incorretos.'}
+};
+$('#lPw').onkeydown=e=>{if(e.key==='Enter')$('#lOk').click()};
+$('#lCfg').onclick=()=>$('#bSync').click();
+function entra(u){
+  usuario=u;sessionStorage.setItem('osbyd.u',u.id);document.body.classList.add('in');$('#lPw').value='';
+  applyUI();render();
+  if(u.trocar)trocaSenha(true);
+}
+function sai(){sessionStorage.clear();location.reload()}
+function applyUI(){
+  $('#who').innerHTML=`Olá, <b>${esc(usuario.nome)}</b> <button class="ghost" id="bPw">Minha senha</button> <button class="ghost" id="bOut">Sair</button>`;
+  $('#bPw').onclick=()=>trocaSenha(false);$('#bOut').onclick=sai;
+  $('#bImpD').hidden=!can('importar');$('#bRel').hidden=!can('relatorio');
+  document.querySelector('[data-aba=hist]').hidden=!can('historico');
+  document.querySelector('[data-aba=nova]').hidden=!can('nova');
+  document.querySelector('[data-aba=reg]').hidden=!can('registro');
+  const conc=can('concluidas');
+  [...$('#fSit').options].forEach(o=>{o.hidden=o.disabled=(o.value!=='pend'&&!conc)});
+  if(!conc)$('#fSit').value='pend';
+  const ab=document.body.dataset.aba;
+  if((ab==='hist'&&!can('historico'))||(ab==='nova'&&!can('nova'))||(ab==='reg'&&!can('registro')))aba('painel');
+}
+function trocaSenha(obrig){
+  dlg.innerHTML=`<h2>${obrig?'Defina a sua senha':'Minha senha'}</h2>${obrig?'<p>Você está usando a senha padrão. Escolha uma senha nova.</p>':''}
+  <label>Senha atual<input type="password" id="pA" autocomplete="current-password"></label>
+  <label>Nova senha (mínimo 6 caracteres)<input type="password" id="pN" autocomplete="new-password"></label>
+  <label>Repita a nova senha<input type="password" id="pR" autocomplete="new-password"></label><p class="err" id="pE"></p>
+  <div class="bar"><button class="ghost" id="pC">${obrig?'Depois':'Cancelar'}</button><button id="pOk">Salvar</button></div>`;
+  dlg.showModal();$('#pC').onclick=()=>dlg.close();
+  $('#pOk').onclick=async()=>{
+    const er=x=>{$('#pE').textContent=x};
+    if(!await confere($('#pA').value,usuario.hash))return er('Senha atual incorreta.');
+    const n=$('#pN').value;
+    if(n.length<6)return er('A nova senha precisa ter ao menos 6 caracteres.');
+    if(n!==$('#pR').value)return er('As senhas novas não conferem.');
+    if(n===inicial(usuario.nome))return er('Escolha uma senha diferente da padrão.');
+    usuario.hash=await mkHash(n);usuario.trocar=false;usuario.at=Date.now();
+    reg('—','Senha alterada','','','');save();dlg.close();toast('Senha alterada.');
+  };
+}
+
+// ----- senha master e ajustes -----
+function mestre(fn){
+  if(sessionStorage.getItem('osbyd.m')==='1')return fn();
+  dlg.innerHTML=`<h2>Senha master</h2><label>Digite a senha master para continuar<input type="password" id="mp" autocomplete="off"></label><p class="err" id="me"></p>
+  <div class="bar"><button class="ghost" id="mC">Cancelar</button><button id="mOk">Entrar</button></div>`;
+  dlg.showModal();$('#mp').focus();
+  const ok=async()=>{if(await confereMestre($('#mp').value)){sessionStorage.setItem('osbyd.m','1');dlg.close();fn()}else{await new Promise(r=>setTimeout(r,700));$('#me').textContent='Senha incorreta.'}};
+  $('#mOk').onclick=ok;$('#mp').onkeydown=e=>{if(e.key==='Enter')ok()};$('#mC').onclick=()=>dlg.close();
+}
+$('#bAju').onclick=()=>mestre(ajustes);
+function ajustes(){
+  dlg.innerHTML=`<h2>Ajustes</h2><div class="aj">
+    <button data-a="usuarios"><b>Usuários e permissões</b></button><button data-a="garagens"><b>Garagens</b></button><button data-a="tecnicos"><b>Técnicos</b></button>
+    <button data-a="sync"><b>Sincronização (GitHub)</b></button><button data-a="gemini"><b>Chave Gemini</b></button><button data-a="master"><b>Trocar senha master</b></button></div>
+  <div class="bar"><button class="ghost" id="aX">Fechar</button></div>`;
+  if(!dlg.open)dlg.showModal();
+  $('#aX').onclick=()=>dlg.close();
+  dlg.querySelector('.aj').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+    if(a==='usuarios')telaUsuarios();else if(a==='garagens')telaGaragens();else if(a==='master')trocaMaster();
+    else{dlg.close();$({tecnicos:'#bTec',sync:'#bSync',gemini:'#bKey'}[a]).click()}};
+}
+function telaUsuarios(){
+  const us=cfg.users.filter(u=>!u.removido).sort((a,b)=>a.nome.localeCompare(b.nome));
+  dlg.innerHTML=`<h2>Usuários e permissões</h2><div id="ul">${us.map(u=>`<div class="ur"><span><b>${esc(u.nome)}</b> <small>${esc(u.garagem||'sem garagem')}${u.ativo?'':' · desativado'}${u.trocar?' · senha padrão':''}</small></span><button class="ghost" data-u="${esc(u.id)}">Editar</button></div>`).join('')}</div>
+  <div class="bar"><button class="ghost" id="uV">Voltar</button><button id="uN">Adicionar usuário</button></div>`;
+  $('#ul').onclick=e=>{const b=e.target.closest('[data-u]');if(b)editaUsuario(b.dataset.u)};
+  $('#uV').onclick=ajustes;$('#uN').onclick=()=>editaUsuario(null);
+}
+function editaUsuario(id){
+  const u=id?cfg.users.find(x=>x.id===id):{nome:'',garagem:'',ativo:true,perms:permsDe([])};
+  dlg.innerHTML=`<h2>${id?'Editar':'Novo'} usuário</h2>
+  <div class="nf"><label>Nome<input type="text" id="eN" value="${esc(u.nome)}"></label>
+  <label>Garagem<select id="eG"><option value="">(nenhuma)</option>${GAR.map(g=>`<option ${g===u.garagem?'selected':''}>${esc(g)}</option>`).join('')}</select></label>
+  <label>Aplicar modelo de permissões<select id="eM"><option value="">—</option>${Object.entries(MODELOS).map(([k,v])=>`<option value="${k}">${esc(v[0])}</option>`).join('')}</select></label>
+  <label class="ck"><input type="checkbox" id="eA" ${u.ativo?'checked':''}> Usuário ativo</label></div>
+  <div class="pm">${PERMS.map(([k,l])=>`<label class="ck"><input type="checkbox" data-p="${k}" ${u.perms[k]?'checked':''}> ${esc(l)}</label>`).join('')}</div>
+  <p class="err" id="eE"></p>
+  <div class="bar"><button class="ghost" id="eV">Voltar</button>${id?'<button class="ghost" id="eR">Redefinir senha padrão</button><button class="ghost" id="eD">Remover</button>':''}<button id="eS">Salvar</button></div>`;
+  $('#eM').onchange=()=>{const m=MODELOS[$('#eM').value];if(m)dlg.querySelectorAll('[data-p]').forEach(c=>{c.checked=m[1].includes(c.dataset.p)})};
+  $('#eV').onclick=telaUsuarios;
+  $('#eS').onclick=async()=>{
+    const nome=$('#eN').value.trim();
+    if(!nome)return $('#eE').textContent='Informe o nome.';
+    if(cfg.users.some(x=>!x.removido&&x.id!==id&&norm(x.nome)===norm(nome)))return $('#eE').textContent='Já existe um usuário com este nome.';
+    const perms=Object.fromEntries([...dlg.querySelectorAll('[data-p]')].map(c=>[c.dataset.p,c.checked]));
+    if(id)Object.assign(u,{nome,garagem:$('#eG').value,ativo:$('#eA').checked,perms,at:Date.now()});
+    else cfg.users.push({id:'u_'+norm(nome)+'_'+Date.now().toString(36),nome,garagem:$('#eG').value,ativo:$('#eA').checked,trocar:true,perms,hash:await mkHash(inicial(nome)),at:Date.now()});
+    reg('—',id?'Usuário alterado':'Usuário criado','','',nome);save();
+    if(usuario){usuario=cfg.users.find(x=>x.id===usuario.id)||usuario;applyUI()}
+    telaUsuarios();
+  };
+  if(id){
+    $('#eR').onclick=async()=>{u.hash=await mkHash(inicial(u.nome));u.trocar=true;u.at=Date.now();reg('—','Senha redefinida','','',u.nome);save();toast('Senha de '+u.nome+' redefinida para a padrão.');telaUsuarios()};
+    $('#eD').onclick=()=>{if(!confirm('Remover '+u.nome+'?'))return;u.removido=true;u.ativo=false;u.at=Date.now();reg('—','Usuário removido','','',u.nome);save();telaUsuarios()};
+  }
+}
+function telaGaragens(){
+  const li=n=>`<div class="ur" data-o="${esc(n)}"><input type="text" value="${esc(n)}" style="flex:1"><button class="ghost" data-del aria-label="Remover">×</button></div>`;
+  dlg.innerHTML=`<h2>Garagens</h2><div id="gl">${GAR.map(li).join('')}</div>
+  <div class="bar"><input type="text" id="gN" placeholder="Nova garagem"><button class="ghost" id="gA">Adicionar</button></div><p class="err" id="gE"></p>
+  <div class="bar"><button class="ghost" id="gV">Voltar</button><button id="gS">Salvar</button></div>`;
+  $('#gl').onclick=e=>{const b=e.target.closest('[data-del]');if(!b)return;const r=b.closest('.ur'),o=r.dataset.o,n=data.filter(x=>garagem(x.cliente)===o).length;
+    if(o&&n){$('#gE').textContent=`Não dá para remover ${o}: há ${n} OS nessa garagem.`;return}r.remove()};
+  $('#gA').onclick=()=>{const v=$('#gN').value.trim();if(v){$('#gl').insertAdjacentHTML('beforeend',li(v).replace('data-o="'+esc(v)+'"','data-o=""'));$('#gN').value=''}};
+  $('#gV').onclick=ajustes;
+  $('#gS').onclick=()=>{
+    const rows=[...dlg.querySelectorAll('#gl .ur')].map(r=>({o:r.dataset.o,n:r.querySelector('input').value.trim()})).filter(x=>x.n);
+    const nomes=rows.map(x=>x.n);
+    if(new Set(nomes.map(norm)).size!==nomes.length)return $('#gE').textContent='Há nomes repetidos.';
+    rows.forEach(x=>{if(x.o&&x.o!==x.n)data.forEach(o=>{if(garagem(o.cliente)===x.o)o.cliente=x.n})});
+    GAR=nomes;reg('—','Garagens alteradas','','',nomes.length+' garagens');save();ajustes();toast('Garagens salvas.');
+  };
+}
+function trocaMaster(){
+  dlg.innerHTML=`<h2>Trocar senha master</h2><label>Nova senha master (mínimo 8 caracteres)<input type="password" id="nm1" autocomplete="new-password"></label>
+  <label>Repita a nova senha<input type="password" id="nm2" autocomplete="new-password"></label><p class="err" id="nmE"></p>
+  <div class="bar"><button class="ghost" id="nmV">Voltar</button><button id="nmS">Salvar</button></div>`;
+  $('#nmV').onclick=ajustes;
+  $('#nmS').onclick=async()=>{const a=$('#nm1').value;
+    if(a.length<8)return $('#nmE').textContent='Use ao menos 8 caracteres.';
+    if(a!==$('#nm2').value)return $('#nmE').textContent='As senhas não conferem.';
+    cfg.master=await mkHash(a);cfg.cat=Date.now();reg('—','Senha master alterada','','','');save();ajustes();toast('Senha master alterada.')};
+}
+
+// ----- registro de alterações -----
+const tabelaLog=l=>`<div class="tw"><table><thead><tr><th>Data/hora</th><th>Usuário</th><th>OS</th><th>Ação</th><th>Mudança</th><th>Motivo</th></tr></thead><tbody>${l.map(x=>`<tr><td>${new Date(x.t).toLocaleString('pt-BR')}</td><td>${esc(x.u)}</td><td>${esc(x.os)}</td><td>${esc(x.ac)}</td><td>${esc(x.de)}${x.de&&x.para?' → ':''}${esc(x.para)}</td><td>${esc(x.mot)}</td></tr>`).join('')}</tbody></table></div>`;
+function renderReg(){
+  if(!cfg||!can('registro'))return;
+  const sel=$('#rgU').value,us=[...new Set(cfg.log.map(x=>x.u))].sort();
+  $('#rgU').innerHTML='<option value="">Todos</option>'+us.map(u=>`<option ${u===sel?'selected':''}>${esc(u)}</option>`).join('');
+  const q=norm($('#rgQ').value),de=$('#rgDe').value?new Date($('#rgDe').value+'T00:00').getTime():0,ate=$('#rgAte').value?new Date($('#rgAte').value+'T23:59:59').getTime():Infinity;
+  const l=cfg.log.filter(x=>(!sel||x.u===sel)&&(!q||norm(x.os).includes(q))&&x.t>=de&&x.t<=ate).sort((a,b)=>b.t-a.t).slice(0,300);
+  $('#rgRes').innerHTML=l.length?tabelaLog(l):'<p class="vazio">Nenhum registro.</p>';
+}
+$('#rgU').onchange=$('#rgQ').oninput=$('#rgDe').onchange=$('#rgAte').onchange=renderReg;
+function logOS(os){
+  if(!can('registro'))return;
+  const l=cfg.log.filter(x=>x.os===os).sort((a,b)=>b.t-a.t);
+  dlg.innerHTML=`<h2>Registro de ${esc(os)}</h2>${l.length?tabelaLog(l):'<p class="vazio">Sem registros para esta OS.</p>'}<div class="bar"><button id="lgX">Fechar</button></div>`;
+  dlg.showModal();$('#lgX').onclick=()=>dlg.close();
+}
+
+(async()=>{
+  if(!cfg&&gh)await semeia();
+  fillTec();fillLogin();render();aba('painel');
+  const uid=sessionStorage.getItem('osbyd.u');
+  const u=cfg&&cfg.users.find(x=>x.id===uid&&x.ativo&&!x.removido);
+  if(u)entra(u);
+  sync();
+})();
 </script>
 </body>
 </html>

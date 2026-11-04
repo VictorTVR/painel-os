@@ -81,7 +81,7 @@ select{font:inherit;font-size:16px;padding:11px;border:1px solid var(--line);bor
       <label><b>Km atual *</b><input id="km" inputmode="numeric" autocomplete="off"></label>
     </div>
     <label><b>VIN (chassi, 17 caracteres) *</b><input id="vin" maxlength="17" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
-    <label><b>Data e hora *</b><input id="dh" type="datetime-local"></label>
+    <label><b>Data e hora (registradas automaticamente)</b><input id="dh" readonly tabindex="-1"></label>
     <label><b>Motivo da reclamação *</b><textarea id="mot" rows="5" maxlength="2000" placeholder="Descreva o que o veículo está apresentando"></textarea></label>
     <p class="err" id="eForm" role="alert"></p>
     <button id="env">Enviar</button>
@@ -89,7 +89,7 @@ select{font:inherit;font-size:16px;padding:11px;border:1px solid var(--line);bor
 
   <!-- minhas OS -->
   <div id="vMinhas" class="v" hidden>
-    <div class="mh"><label>Mostrar<select id="mFiltro"><option value="todas">Todas</option><option value="andamento">Em andamento</option><option value="concluidas">Concluídas</option></select></label><button class="sec" id="mAtual">Atualizar</button></div>
+    <div class="mh"><label>Mostrar<select id="mFiltro"><option value="todas">Todas</option><option value="andamento">Em andamento</option><option value="concluidas">Veículos liberados</option></select></label><button class="sec" id="mAtual">Atualizar</button></div>
     <p class="sub" id="mInfo"></p>
     <div id="mLista" class="cards"></div>
   </div>
@@ -135,10 +135,20 @@ async function gget(p){
   if(!r.ok)throw new Error('Falha temporária ('+r.status+'). Tente de novo.');
   const j=await r.json();return{sha:j.sha,dados:JSON.parse(dec(j.content))};
 }
-async function gput(p,dados,sha,msg){
+async function gputR(p,dados,sha,msg){
   const body={message:msg,content:enc(JSON.stringify(dados))};if(sha)body.sha=sha;
   let r;try{r=await fetch(urlGh(p),{method:'PUT',headers:{...HD(),'Content-Type':'application/json'},body:JSON.stringify(body)})}catch(e){throw new Error(SEM_NET)}
-  return r.status;
+  let json=null;try{json=await r.clone().json()}catch(e){}
+  return{status:r.status,json};
+}
+const gput=async(...a)=>(await gputR(...a)).status;
+// a hora de abertura não é editável; e se o relógio do aparelho estiver errado (ou adulterado), vale a hora do GitHub
+async function acertaHora(caminho,reg,resp){
+  try{
+    const srv=Date.parse(resp.json.commit.committer.date),cli=Date.parse(reg.dataHora+':00-03:00');
+    if(!isFinite(srv)||!isFinite(cli)||Math.abs(srv-cli)<5*60*1000)return;
+    await gputR(caminho,{...reg,dataHora:brHora(srv),dataHoraCliente:reg.dataHora},resp.json.content.sha,'Hora corrigida pelo relógio do GitHub');
+  }catch(e){}
 }
 const achaConta=(cs,u)=>(cs||[]).find(c=>norm(c.usuario)===norm(u));
 const senhaPadrao=u=>String(u).replace(/\s/g,'')+'@2026';
@@ -214,8 +224,9 @@ async function abrirOS(usuario,d){
     if(max>=999)throw new Error('O limite de 999 OS por dia foi atingido. Fale com o responsável.');
     const seq=String(max+1).padStart(3,'0'),cod='TRACCIÓN-'+dia+seq;
     // arquivo novo, sem "sha": se outro cliente criou esse número ao mesmo tempo, o GitHub recusa e tentamos o próximo
-    const s=await gput('solicitacoes/'+dia+'/'+seq+'.json',{os:cod,nome,garagem:c.usuario,prefixo,vin,km:Number(km),motivo,dataHora:dh,recebidoEm:new Date().toISOString()},null,'Nova solicitação '+cod+' ('+c.usuario+')');
-    if(s>=200&&s<300)return cod;
+    const caminho='solicitacoes/'+dia+'/'+seq+'.json',reg={os:cod,nome,garagem:c.usuario,prefixo,vin,km:Number(km),motivo,dataHora:dh.slice(0,16),recebidoEm:new Date().toISOString()};
+    const resp=await gputR(caminho,reg,null,'Nova solicitação '+cod+' ('+c.usuario+')'),s=resp.status;
+    if(s>=200&&s<300){await acertaHora(caminho,reg,resp);return cod}
     if(s!==422&&s!==409)throw new Error('Falha ao registrar a OS ('+s+'). Tente de novo.');
   }
   throw new Error('Muitas aberturas ao mesmo tempo. Tente de novo.');
@@ -224,7 +235,8 @@ async function abrirOS(usuario,d){
 // ---------- tela ----------
 const VIEWS=['vLogin','vTroca','vForm','vMinhas','vOk'];
 const mostra=v=>{VIEWS.forEach(x=>{$('#'+x).hidden=x!==v});$('#nav').hidden=!(sessao&&['vForm','vOk','vMinhas'].includes(v));window.scrollTo(0,0)};
-function agora(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())}
+const brHora=ms=>new Date(ms-3*3600*1000).toISOString().slice(0,16);   // AAAA-MM-DDTHH:MM em horário de Brasília
+function agora(){const s=brHora(Date.now());return s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4)+' '+s.slice(11,16)+' (Brasília)'}
 let sessao=null,senhaAtual='';
 try{sessao=JSON.parse(sessionStorage.getItem('osb.s'))}catch(e){}
 function sai(msg){sessao=null;senhaAtual='';sessionStorage.removeItem('osb.s');$('#ls').value='';$('#eLogin').textContent=msg||'';mostra('vLogin')}
@@ -263,12 +275,11 @@ $('#vin').oninput=e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z
 $('#km').oninput=e=>{e.target.value=e.target.value.replace(/\D/g,'')};
 $('#env').onclick=async()=>{
   const e=$('#eForm');e.textContent='';
-  const d={nome:$('#nome').value,prefixo:$('#pre').value,vin:$('#vin').value,km:$('#km').value,dataHora:$('#dh').value,motivo:$('#mot').value};
+  const d={nome:$('#nome').value,prefixo:$('#pre').value,vin:$('#vin').value,km:$('#km').value,dataHora:brHora(Date.now()),motivo:$('#mot').value};
   if(String(d.nome).trim().split(/\s+/).length<2)return e.textContent='Informe o nome da pessoa que está abrindo a OS (nome e sobrenome), não o da garagem, empresa ou setor.';
   if(!String(d.prefixo).trim())return e.textContent='Informe o prefixo do veículo.';
   if(!/^[A-Z0-9]{17}$/.test(d.vin))return e.textContent='O VIN precisa ter 17 letras e números.';
   if(!/^\d{1,7}$/.test(d.km))return e.textContent='Informe o Km atual (só números).';
-  if(!d.dataHora)return e.textContent='Informe a data e a hora.';
   if(String(d.motivo).trim().length<5)return e.textContent='Descreva o motivo da reclamação.';
   const b=$('#env');b.disabled=true;b.textContent='Enviando…';
   try{
@@ -282,12 +293,12 @@ $('#copia').onclick=async()=>{try{await navigator.clipboard.writeText($('#cod').
 $('#novo').onclick=()=>{['nome','pre','km','vin','mot'].forEach(i=>$('#'+i).value='');$('#copia').textContent='Copiar código';entraForm()};
 // ---------- Minhas OS (cartões com código e status; os técnicos atualizam o status no painel) ----------
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const ROT={aguardando:'Aguardando',atendimento:'Em atendimento',peca:'Aguardando peça',concluido:'Concluída',recebida:'Recebida'};
+const ROT={aguardando:'Aguardando',atendimento:'Em atendimento',peca:'Aguardando peça',concluido:'Veículo liberado',recebida:'Recebida'};
 function cartao(o){
   const q=o.desde?new Date(o.desde).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
   return `<article class="os ${esc(o.status)}"><div class="l1"><b>${esc(o.os)}</b><span class="pill ${esc(o.status)}">${esc(ROT[o.status]||o.status)}</span></div>
   <p>${esc(o.motivo)}</p>
-  <dl><div><dt>Prefixo</dt><dd>${esc(o.prefixo)}</dd></div><div><dt>Km</dt><dd>${esc(o.km)}</dd></div><div><dt>Aberta em</dt><dd>${esc(o.abertura)}${o.hora?' '+esc(o.hora):''}</dd></div><div><dt>Aberta por</dt><dd>${esc(o.solicitante)}</dd></div><div><dt>VIN</dt><dd>${esc(o.vin)}</dd></div>${q&&o.status!=='recebida'?`<div><dt>Status atualizado</dt><dd>${q}</dd></div>`:''}</dl>
+  <dl><div><dt>Prefixo</dt><dd>${esc(o.prefixo)}</dd></div><div><dt>Km</dt><dd>${esc(o.km)}</dd></div><div><dt>Aberta em</dt><dd>${esc(o.abertura)}${o.hora?' '+esc(o.hora):''}</dd></div><div><dt>Aberta por</dt><dd>${esc(o.solicitante)}</dd></div><div><dt>VIN</dt><dd>${esc(o.vin)}</dd></div>${q&&o.status!=='recebida'?`<div><dt>${o.status==='concluido'?'Liberado em':'Status atualizado'}</dt><dd>${q}</dd></div>`:''}</dl>
   ${o.status==='recebida'?'<p class="nota">Recebida. Em instantes o status aparece aqui.</p>':''}</article>`;
 }
 async function carregaMinhas(){
@@ -300,6 +311,7 @@ async function carregaMinhas(){
     const d=new Date();info.textContent=v.length+' OS · atualizado às '+pad(d.getHours())+':'+pad(d.getMinutes());
   }catch(er){info.textContent=er.message}
 }
+setInterval(()=>{if(!$('#vForm').hidden)$('#dh').value=agora()},20000);
 $('#nMinhas').onclick=()=>{mostra('vMinhas');carregaMinhas()};
 $('#nAbrir').onclick=entraForm;
 $('#mAtual').onclick=carregaMinhas;

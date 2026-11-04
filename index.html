@@ -225,6 +225,7 @@ const KC='osbyd.cfg';let cfg=null,usuario=null;
 try{cfg=JSON.parse(localStorage.getItem(KC))}catch(e){}
 if(cfg){if(Array.isArray(cfg.gars)&&cfg.gars.length)GAR=cfg.gars;if(Array.isArray(cfg.tecs))tecs=cfg.tecs}
 const can=k=>!!(usuario&&usuario.perms&&usuario.perms[k]);
+const podeNaOS=o=>!can('propria')||!!(usuario&&usuario.garagem&&garagem(o.cliente)===usuario.garagem);
 let snap=new Map();
 const sj=o=>JSON.stringify({...o,at:0});
 const snapshot=()=>{snap=new Map(data.map(o=>[o.os,sj(o)]))};
@@ -236,9 +237,10 @@ const save=()=>{
 };
 snapshot();
 const pend=o=>o.status!=='concluido';
+const selo=o=>o.origem==='concessionaria'?'<span class="bd">Concessionária</span>':o.origem==='cliente'?'<span class="bd">Cliente</span>':'';
 const tipoFech=o=>o.fechamento||(/fechado automaticamente/i.test(o.obs||'')?'auto':'manual');
 const subseq=(a,b)=>{let i=0;for(const ch of b)if(ch===a[i])i++;return i===a.length};
-function achaOS(o,q){return norm(o.os).includes(q)||(o.origem==='concessionaria'&&q.length>=4&&subseq(q,norm(PREFIXO)))}
+function achaOS(o,q){return norm(o.os).includes(q)||(['concessionaria','cliente'].includes(o.origem)&&q.length>=4&&subseq(q,norm(PREFIXO)))}
 function garagem(c){const k=norm(c);if(!k)return'Sem cliente';return GAR.find(g=>{const n=norm(g);return k.includes(n)||(k.length>2&&n.includes(k))})||String(c).trim()}
 function pd(s){const m=/(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s||'');return m?new Date(+m[3],m[2]-1,+m[1]):null}
 // dias úteis (seg–sex) desde a abertura, igual à coluna "Dias aberta" do relatório
@@ -278,12 +280,12 @@ function render(){
     </button>
     <div class="list">${b.arr.map(({o,n,c,fin})=>`
       <article class="os ${fin?'concluido '+(tipoFech(o)==='auto'?'fauto':'fman'):(o.status==='atendimento'?'atend':o.status==='peca'?'peca':c)}">
-        <div class="l1"><b>${esc(o.os)}</b>${o.origem==='concessionaria'?'<span class="bd">Concessionária</span>':''}<span class="d">${fin?(tipoFech(o)==='auto'?'Concluída (auto)':'Concluída (manual)'):txt(n)}</span></div>
+        <div class="l1"><b>${esc(o.os)}</b>${selo(o)}<span class="d">${fin?(tipoFech(o)==='auto'?'Concluída (auto)':'Concluída (manual)'):txt(n)}</span></div>
         <p>${esc(o.desc)}</p>
-        <dl><div><dt>Frota</dt><dd>${esc(o.frota)}</dd></div><div><dt>Km</dt><dd>${esc(o.km)||'–'}</dd></div><div><dt>Aberta em</dt><dd>${esc(o.abertura)}</dd></div><div><dt>VIN</dt><dd>${esc(o.vin)}</dd></div>${o.placa?`<div><dt>Placa</dt><dd>${esc(o.placa)}</dd></div>`:''}</dl>
-        ${fin?`<div class="fim"><span class="tf ${tipoFech(o)==='auto'?'ta':'tm'}">${tipoFech(o)==='auto'?'Fechada automaticamente':'Fechada manualmente'}</span><br><b>Técnicos:</b> ${esc((o.tecnicos||[]).join(', ')||'–')}<br><b>Obs.:</b> ${esc(o.obs)||'–'}</div>${can('finalizar')?`<button class="ghost" data-fin="${esc(o.os)}">Editar finalização</button>`:''}`:''}
-        ${fin?'':`<textarea class="ob" data-ob="${esc(o.os)}" ${can('obs')?'':'readonly'} rows="2" placeholder="Observação (ex.: aguardando peça)" aria-label="Observação da ${esc(o.os)}">${esc(o.obs)}</textarea>`}
-        ${can('status')?`<select data-os="${esc(o.os)}" aria-label="Status da ${esc(o.os)}">${Object.entries(ST).filter(([k])=>k!=='concluido'||can('finalizar')||o.status==='concluido').map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}</select>`:`<span class="st ${o.status}">${ST[o.status]||o.status}</span>`}
+        <dl><div><dt>Frota</dt><dd>${esc(o.frota)}</dd></div><div><dt>Km</dt><dd>${esc(o.km)||'–'}</dd></div><div><dt>Aberta em</dt><dd>${esc(o.abertura)}${o.hora?' '+esc(o.hora):''}</dd></div>${o.solicitante?`<div><dt>Aberta por</dt><dd>${esc(o.solicitante)}</dd></div>`:''}<div><dt>VIN</dt><dd>${esc(o.vin)}</dd></div>${o.placa?`<div><dt>Placa</dt><dd>${esc(o.placa)}</dd></div>`:''}</dl>
+        ${fin?`<div class="fim"><span class="tf ${tipoFech(o)==='auto'?'ta':'tm'}">${tipoFech(o)==='auto'?'Fechada automaticamente':'Fechada manualmente'}</span><br><b>Técnicos:</b> ${esc((o.tecnicos||[]).join(', ')||'–')}<br><b>Obs.:</b> ${esc(o.obs)||'–'}</div>${can('finalizar')&&podeNaOS(o)?`<button class="ghost" data-fin="${esc(o.os)}">Editar finalização</button>`:''}`:''}
+        ${fin?'':`<textarea class="ob" data-ob="${esc(o.os)}" ${can('obs')&&podeNaOS(o)?'':'readonly'} rows="2" placeholder="Observação (ex.: aguardando peça)" aria-label="Observação da ${esc(o.os)}">${esc(o.obs)}</textarea>`}
+        ${can('status')&&podeNaOS(o)?`<select data-os="${esc(o.os)}" aria-label="Status da ${esc(o.os)}">${Object.entries(ST).filter(([k])=>k!=='concluido'||can('finalizar')||o.status==='concluido').map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}</select>`:`<span class="st ${o.status}">${ST[o.status]||o.status}</span>`}
         ${can('registro')?`<button class="ghost" data-log="${esc(o.os)}">Registro da OS</button>`:''}
       </article>`).join('')}</div>
   </section>`)}).join('')||'<p class="vazio">Nada para mostrar com estes filtros.</p>';
@@ -316,14 +318,14 @@ function graficos(tot){
 // ---------- eventos ----------
 $('#grid').addEventListener('click',e=>{
   const h=e.target.closest('[data-g]');if(h){const k=h.dataset.g;abertos.has(k)?abertos.delete(k):abertos.add(k);render();return}
-  const f=e.target.closest('[data-fin]');if(f){if(can('finalizar'))finalizar(f.dataset.fin);return}
+  const f=e.target.closest('[data-fin]');if(f){const o=data.find(x=>x.os===f.dataset.fin);if(o&&can('finalizar')&&podeNaOS(o))finalizar(o.os);return}
   const lg=e.target.closest('[data-log]');if(lg)logOS(lg.dataset.log)});
 $('#grid').addEventListener('change',e=>{
   const t=e.target.closest('textarea[data-ob]');
-  if(t){const o=data.find(x=>x.os===t.dataset.ob),v=t.value.trim();if(o&&can('obs')&&v!==(o.obs||'')){reg(o.os,'Observação alterada',o.obs||'',v,'');o.obs=v;save()}return}
+  if(t){const o=data.find(x=>x.os===t.dataset.ob),v=t.value.trim();if(o&&can('obs')&&podeNaOS(o)&&v!==(o.obs||'')){reg(o.os,'Observação alterada',o.obs||'',v,'');o.obs=v;save()}return}
   const s=e.target.closest('select[data-os]');if(!s)return;
   const o=data.find(x=>x.os===s.dataset.os);
-  if(!o||!can('status')){render();return}
+  if(!o||!can('status')||!podeNaOS(o)){render();return}
   if(s.value==='concluido'){if(can('finalizar'))finalizar(o.os);else render();return}
   const de=o.status,para=s.value;
   motivo('Alterar status de '+o.os,m=>{o.status=para;delete o.fechamento;reg(o.os,'Status',ST[de],ST[para],m);save()})});
@@ -413,7 +415,7 @@ async function importar(files){
 }
 const COLS=[['os','OS'],['cliente','Cliente'],['frota','Frota'],['km','Km'],['abertura','Abertura'],['vin','VIN'],['placa','Placa'],['desc','Descrição']];
 function conferir(rows,urls,erros=[]){
-  const falt=data.filter(o=>pend(o)&&o.origem!=='concessionaria'&&!rows.some(r=>r.os===o.os));
+  const falt=data.filter(o=>pend(o)&&!['concessionaria','cliente'].includes(o.origem)&&!rows.some(r=>r.os===o.os));
   const jaConc=rows.filter(r=>data.some(o=>o.os===r.os&&!pend(o))).map(r=>r.os);
   dlg.innerHTML=`<h2>Conferir antes de salvar</h2>${erros.length?`<div class="err">${erros.map(e=>`<p>${esc(e)}</p>`).join('')}</div>`:''}${rows.length?'':'<p class="err"><b>Nenhuma OS foi lida, então não há nada para salvar.</b> Feche e tente de novo em alguns minutos, ou use a importação por planilha ou por código.</p>'}
   <div class="thumbs">${urls.map(u=>`<a href="${u}" target="_blank"><img src="${u}" alt="Imagem do relatório"></a>`).join('')}</div>
@@ -437,7 +439,7 @@ function conferir(rows,urls,erros=[]){
       });
       if(!nums.size){$('#sErr').textContent='Nenhuma OS para salvar.';return}
       if($('#auto')?.checked){const h=new Date().toLocaleDateString('pt-BR');
-        data.forEach(o=>{if(pend(o)&&o.origem!=='concessionaria'&&!nums.has(o.os)){reg(o.os,'Status',ST[o.status],'Concluído','Fechamento automático na importação');o.status='concluido';o.fechamento='auto';o.obs=(o.obs?o.obs+' | ':'')+'Fechado automaticamente em '+h;fech++}})}
+        data.forEach(o=>{if(pend(o)&&!['concessionaria','cliente'].includes(o.origem)&&!nums.has(o.os)){reg(o.os,'Status',ST[o.status],'Concluído','Fechamento automático na importação');o.status='concluido';o.fechamento='auto';o.obs=(o.obs?o.obs+' | ':'')+'Fechado automaticamente em '+h;fech++}})}
       reg('—','Importação','',`${novas} novas, ${atual} atualizadas${fech?', '+fech+' fechadas automaticamente':''}`,'');save();dlg.close();aba('painel');render();
       toast(`${novas} OS nova(s), ${atual} atualizada(s)`+(fech?`, ${fech} fechada(s) automaticamente`:'')+(mant?`, ${mant} já concluída(s) mantida(s) como concluída`:'')+(reab?`, ${reab} reaberta(s)`:'')+'.');
     }catch(e){$('#sErr').textContent='Erro ao salvar: '+e.message}
@@ -537,7 +539,7 @@ $('#bImpD').onclick=()=>{
   dlg.querySelector('.imp').onclick=e=>{const b=e.target.closest('[data-i]');if(b){dlg.close();$('#'+b.dataset.i).click()}};
 };
 // ---------- relatório personalizável ----------
-const RC=[['os','OS',o=>o.os],['gar','Garagem',o=>garagem(o.cliente)],['frota','Frota',o=>o.frota],['km','Km',o=>o.km],['ab','Abertura',o=>o.abertura],['dias','Dias úteis',o=>dias(o)??''],['pri','Prioridade',o=>pend(o)?cor(dias(o)):'concluída'],['vin','VIN',o=>o.vin],['pla','Placa',o=>o.placa||''],['desc','Descrição',o=>o.desc],['st','Status',o=>ST[o.status]||o.status],['tec','Técnicos',o=>(o.tecnicos||[]).join(', ')],['obs','Observação',o=>o.obs],['orig','Origem',o=>o.origem==='concessionaria'?'Concessionária':'BYD'],['fech','Fechamento',o=>pend(o)?'':(tipoFech(o)==='auto'?'Automático':'Manual')]];
+const RC=[['os','OS',o=>o.os],['gar','Garagem',o=>garagem(o.cliente)],['frota','Frota',o=>o.frota],['km','Km',o=>o.km],['ab','Abertura',o=>o.abertura],['dias','Dias úteis',o=>dias(o)??''],['pri','Prioridade',o=>pend(o)?cor(dias(o)):'concluída'],['vin','VIN',o=>o.vin],['pla','Placa',o=>o.placa||''],['desc','Descrição',o=>o.desc],['st','Status',o=>ST[o.status]||o.status],['tec','Técnicos',o=>(o.tecnicos||[]).join(', ')],['obs','Observação',o=>o.obs],['orig','Origem',o=>o.origem==='concessionaria'?'Concessionária':o.origem==='cliente'?'Cliente':'BYD'],['sol','Aberta por',o=>o.solicitante||''],['fech','Fechamento',o=>pend(o)?'':(tipoFech(o)==='auto'?'Automático':'Manual')]];
 $('#bRel').onclick=()=>{
   const gars=[...new Set([...GAR,...data.map(o=>garagem(o.cliente))])];
   const ck=(n,v,l)=>`<label class="ck"><input type="checkbox" name="${n}" value="${esc(v)}" checked> ${esc(l)}</label>`;
@@ -583,7 +585,8 @@ const gUrl=()=>`https://api.github.com/repos/${gh.repo}/contents/dados.json`;
 const gHd=()=>({Authorization:'Bearer '+gh.token,Accept:'application/vnd.github+json'});
 function setSync(m,erro){const e=$('#sync');e.textContent=m;e.style.color=erro?'var(--vermelho)':'var(--mut)'}
 const msg=e=>/failed to fetch|network/i.test(e.message)?'sem conexão com o GitHub':e.message;
-const hora=()=>'Sincronizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+let avisoEntrada='';
+const hora=()=>'Sincronizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+(avisoEntrada?' · '+avisoEntrada:'');
 const carga=()=>({data,tecs,gk:localStorage.getItem(KK)||'',cfg});
 function mescla(rem){
   const m=new Map((rem.data||[]).map(o=>[o.os,o]));
@@ -599,6 +602,48 @@ function mescla(rem){
   const l=new Map((rc.log||[]).map(x=>[x.id,x]));(cfg.log||[]).forEach(x=>l.set(x.id,x));
   cfg.log=[...l.values()].sort((a,b)=>a.t-b.t).slice(-2000);
 }
+// ---------- OS abertas pelos clientes (um arquivo por solicitação, na pasta solicitacoes/ do repositório de entrada) ----------
+const entradaRepo=()=>gh.entrada||(gh.repo.split('/')[0]+'/painel-os-entrada');
+let ignorados=new Set();try{ignorados=new Set(JSON.parse(localStorage.getItem('osbyd.ign')||'[]'))}catch(e){}
+const validaSol=(s,cod)=>!!s&&s.os===cod&&/^[A-Z0-9]{17}$/.test(String(s.vin||''))&&String(s.prefixo||'').trim().length>0&&String(s.prefixo).length<=15&&Number.isFinite(+s.km)&&+s.km>=0&&String(s.motivo||'').trim().length>=5&&String(s.nome||'').trim().length>=2&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(String(s.dataHora||''));
+function incorpora(s,tm){
+  const dh=String(s.dataHora||''),gi=s.garagem?garagem(s.garagem):'';
+  const g=gi||((data.find(o=>norm(o.frota)===norm(s.prefixo)||(s.vin&&o.vin===s.vin))||{}).cliente)||'Cliente (sem garagem)';
+  data.push({os:s.os,cliente:g,frota:String(s.prefixo||''),km:String(s.km??''),abertura:dataBR(dh),hora:dh.slice(11,16),vin:String(s.vin||''),placa:'',desc:String(s.motivo||''),status:'aguardando',tecnicos:[],obs:'',origem:'cliente',solicitante:String(s.nome||''),at:tm});
+  if(cfg&&!cfg.log.some(x=>x.id==='sol-'+s.os))cfg.log.push({id:'sol-'+s.os,t:Date.parse(s.recebidoEm)||tm,u:'Cliente: '+(s.nome||'—'),uid:'',os:s.os,ac:'OS aberta pelo cliente',de:'',para:'Frota '+s.prefixo,mot:String(s.motivo||'').slice(0,300)});
+}
+const dirGh=async(repo,p)=>{const r=await fetch(`https://api.github.com/repos/${repo}/contents/${p}?t=${Date.now()}`,{headers:gHd()});return{status:r.status,arr:r.ok?await r.json():[]}};
+async function importaSolicitacoes(){
+  const repo=entradaRepo();
+  const raiz=await dirGh(repo,'solicitacoes');
+  if(raiz.status===404){   // pasta ainda vazia, ou o token do painel não enxerga o repositório de entrada
+    try{const rr=await fetch(`https://api.github.com/repos/${repo}`,{headers:gHd()});avisoEntrada=rr.status===404?'repositório de entrada não encontrado ou sem acesso do token':''}catch(e){}
+    return 0;
+  }
+  if(raiz.status!==200)throw new Error('solicitações: erro '+raiz.status);
+  avisoEntrada='';
+  const dias=(Array.isArray(raiz.arr)?raiz.arr:[]).filter(f=>f.type==='dir'&&/^\d{6}$/.test(f.name)).map(f=>f.name).sort();
+  const ini=localStorage.getItem('osbyd.cur')||new Date(Date.now()-14*864e5-3*3600e3).toISOString().slice(2,10).replace(/-/g,'');
+  const tem=new Set(data.map(o=>o.os));let n=0,falhou='';const tm=Date.now();
+  for(const d of dias.filter(x=>x>=ini)){
+    const l=await dirGh(repo,'solicitacoes/'+d);
+    if(l.status!==200){falhou=falhou||d;continue}
+    for(const f of l.arr){
+      const m=/^(\d{3})\.json$/.exec(f.name||'');if(!m)continue;
+      const cod='TRACCIÓN-'+d+m[1];
+      if(tem.has(cod)||ignorados.has(cod))continue;
+      try{
+        const g=await fetch(f.url,{headers:gHd()});
+        const s=JSON.parse(dec((await g.json()).content));
+        if(!validaSol(s,cod)){ignorados.add(cod);continue}
+        incorpora(s,tm);tem.add(cod);n++;
+      }catch(e){falhou=falhou||d}   // tenta de novo na próxima sincronização
+    }
+  }
+  const ultimo=dias.length?dias[dias.length-1]:ini;
+  try{localStorage.setItem('osbyd.cur',falhou&&falhou<ultimo?falhou:ultimo);localStorage.setItem('osbyd.ign',JSON.stringify([...ignorados]))}catch(e){}
+  return n;
+}
 async function sync(){
   if(!gh)return;
   if(sincronizando){denovo=true;return}
@@ -610,6 +655,7 @@ async function sync(){
     else if(r.status!==404)throw new Error(r.status===401?'token inválido':r.status===403?'sem permissão':'erro '+r.status);
     if(rem)mescla(rem);
     if(!cfg)await semeia();
+    try{const nn=await importaSolicitacoes();if(nn&&usuario)toast(nn+(nn>1?' novas OS abertas por clientes.':' nova OS aberta por cliente.'))}catch(e){}
     snapshot();gravaLocal();
     const novo=JSON.stringify(carga());
     if(!rem||JSON.stringify(rem)!==novo){
@@ -661,9 +707,9 @@ function renderHist(){
   $('#hRes').innerHTML=`<div class="hh"><b>${l.length}</b> OS encontradas: <b>${ab}</b> pendentes e <b>${l.length-ab}</b> concluídas.</div>
   <div class="hres">${l.map(o=>{const n=dias(o),p=pend(o);return`
     <article class="os ${!p?'concluido '+(tipoFech(o)==='auto'?'fauto':'fman'):(o.status==='atendimento'?'atend':o.status==='peca'?'peca':cor(n))}">
-      <div class="l1"><b>${esc(o.os)}</b>${o.origem==='concessionaria'?'<span class="bd">Concessionária</span>':''}<span class="st ${o.status}">${ST[o.status]||o.status}</span></div>
+      <div class="l1"><b>${esc(o.os)}</b>${selo(o)}<span class="st ${o.status}">${ST[o.status]||o.status}</span></div>
       <p>${esc(o.desc)}</p>
-      <dl><div><dt>Frota</dt><dd>${esc(o.frota)}</dd></div><div><dt>Garagem</dt><dd>${esc(garagem(o.cliente))}</dd></div>${o.placa?`<div><dt>Placa</dt><dd>${esc(o.placa)}</dd></div>`:''}<div><dt>Aberta em</dt><dd>${esc(o.abertura)}${p?' ('+txt(n)+')':''}</dd></div><div><dt>VIN</dt><dd>${esc(o.vin)}</dd></div></dl>
+      <dl><div><dt>Frota</dt><dd>${esc(o.frota)}</dd></div><div><dt>Garagem</dt><dd>${esc(garagem(o.cliente))}</dd></div>${o.placa?`<div><dt>Placa</dt><dd>${esc(o.placa)}</dd></div>`:''}<div><dt>Aberta em</dt><dd>${esc(o.abertura)}${p?' ('+txt(n)+')':''}</dd></div>${o.solicitante?`<div><dt>Aberta por</dt><dd>${esc(o.solicitante)}</dd></div>`:''}<div><dt>VIN</dt><dd>${esc(o.vin)}</dd></div></dl>
       ${!p?`<div class="fim"><span class="tf ${tipoFech(o)==='auto'?'ta':'tm'}">${tipoFech(o)==='auto'?'Fechada automaticamente':'Fechada manualmente'}</span><br><b>Técnicos:</b> ${esc((o.tecnicos||[]).join(', ')||'–')}<br><b>Obs.:</b> ${esc(o.obs)||'–'}</div>`:(o.obs?`<div class="fim"><b>Obs.:</b> ${esc(o.obs)}</div>`:'')}
     </article>`}).join('')}</div>`;
 }
@@ -713,8 +759,8 @@ async function confere(pw,h){
 const MASTER_PADRAO=['p1:504ff247657158ae8136ffde9b45afbc:ac4d75cde7922ac26b6bcd4639c5c6b3ae9291897125405d33010c8ae91f672f','w:401658e4d9b4036328f88da984469ff3:8290198441077820'];
 async function confereMestre(pw){for(const h of MASTER_PADRAO)if(await confere(pw,h))return true;return false}
 
-const PERMS=[['concluidas','Ver OS concluídas'],['status','Alterar status'],['finalizar','Finalizar OS'],['obs','Editar observação'],['nova','Adicionar OS'],['importar','Importar dados'],['historico','Histórico do veículo'],['relatorio','Gerar relatório'],['registro','Ver registro de alterações']];
-const MODELOS={tecnico:['Técnico (só vê OS abertas)',[]],residente:['Técnico residente',['concluidas','status','finalizar','obs','historico']],campo:['Técnico de campo',['concluidas','status','finalizar','obs','historico']],lider:['Líder / consultor (tudo)',PERMS.map(p=>p[0])]};
+const PERMS=[['concluidas','Ver OS concluídas'],['status','Alterar status'],['finalizar','Finalizar OS'],['obs','Editar observação'],['propria','Alterar só as OS da própria garagem'],['nova','Adicionar OS'],['importar','Importar dados'],['historico','Histórico do veículo'],['relatorio','Gerar relatório'],['registro','Ver registro de alterações']];
+const MODELOS={tecnico:['Técnico (só vê OS abertas)',[]],residente:['Técnico residente (só a própria garagem)',['concluidas','status','finalizar','obs','propria','historico']],campo:['Técnico de campo',['concluidas','status','finalizar','obs','historico']],lider:['Líder / consultor (tudo)',PERMS.map(p=>p[0]).filter(k=>k!=='propria')]};
 const permsDe=ks=>Object.fromEntries(PERMS.map(([k])=>[k,ks.includes(k)]));
 const NOMES0=['Alex','Alexon','Akunna','Luiz Amutti','João Abreu','Victor Tavares','Mario Almeida','Jose Carlos','Alessandro','Ricardo','Roberto','Yeferson','Carlos Sedeño','Fell','Angel','Danilo','Yan Carlos'];
 const inicial=n=>n.trim()[0].toUpperCase()+'BYD2026';
@@ -796,14 +842,80 @@ function mestre(fn){
 $('#bAju').onclick=()=>mestre(ajustes);
 function ajustes(){
   dlg.innerHTML=`<h2>Ajustes</h2><div class="aj">
-    <button data-a="usuarios"><b>Usuários e permissões</b></button><button data-a="garagens"><b>Garagens</b></button><button data-a="tecnicos"><b>Técnicos</b></button>
+    <button data-a="usuarios"><b>Usuários e permissões</b></button><button data-a="garagens"><b>Garagens</b></button><button data-a="clientes"><b>Acesso dos clientes</b></button><button data-a="tecnicos"><b>Técnicos</b></button>
     <button data-a="sync"><b>Sincronização (GitHub)</b></button><button data-a="gemini"><b>Chave Gemini</b></button></div>
   <div class="bar"><button class="ghost" id="aX">Fechar</button></div>`;
   if(!dlg.open)dlg.showModal();
   $('#aX').onclick=()=>dlg.close();
   dlg.querySelector('.aj').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
-    if(a==='usuarios')telaUsuarios();else if(a==='garagens')telaGaragens();
+    if(a==='usuarios')telaUsuarios();else if(a==='garagens')telaGaragens();else if(a==='clientes')telaClientes();
     else{dlg.close();$({tecnicos:'#bTec',sync:'#bSync',gemini:'#bKey'}[a]).click()}};
+}
+// ----- acesso dos clientes à página de abertura de OS (contas em clientes.json; o Worker confere as senhas) -----
+const IT_CLI=100000;
+const senhaPadraoCli=u=>String(u).replace(/\s/g,'')+'@2026';
+async function mkHashCli(pw){
+  const salt=hex(crypto.getRandomValues(new Uint8Array(16)));
+  const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+  const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:IT_CLI,hash:'SHA-256'},k,256);
+  return `p2:${IT_CLI}:${salt}:${hex(b)}`;
+}
+const urlCli=()=>`https://api.github.com/repos/${entradaRepo()}/contents/contas.json`;
+async function lerClientes(){
+  const r=await fetch(urlCli()+'?t='+Date.now(),{headers:gHd()});
+  if(r.status===404)return{sha:null,contas:[]};
+  if(!r.ok)throw new Error(r.status===401?'token inválido':'erro '+r.status);
+  const j=await r.json();return{sha:j.sha,contas:(JSON.parse(dec(j.content)).contas)||[]};
+}
+async function mudaClientes(fn){
+  for(let i=0;i<4;i++){
+    const {sha,contas}=await lerClientes();
+    await fn(contas);
+    const body={message:'Acessos de clientes',content:enc(JSON.stringify({contas}))};if(sha)body.sha=sha;
+    const w=await fetch(urlCli(),{method:'PUT',headers:{...gHd(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(w.ok)return;
+    if(w.status!==409&&w.status!==422)throw new Error(w.status===404?'o token do painel não tem acesso ao repositório de entrada (adicione-o ao token)':'erro '+w.status);
+  }
+  throw new Error('conflito ao gravar, tente de novo');
+}
+function geraConfig(){
+  dlg.innerHTML=`<h2>Config da página do cliente</h2>
+  <p>Crie um token do GitHub só para o repositório <b>${esc(entradaRepo())}</b> com <b>Contents: Read and write</b> e cole abaixo. Ele não fica guardado aqui: vira o arquivo <b>config.js</b>, que você envia ao GitHub junto do abrir.html.</p>
+  <label>Token do repositório de entrada<input type="password" id="gT" autocomplete="off"></label><p class="err" id="gE2"></p>
+  <div class="bar"><button class="ghost" id="gV2">Voltar</button><button id="gB">Baixar config.js</button></div>`;
+  $('#gV2').onclick=telaClientes;
+  $('#gB').onclick=()=>{
+    const k=$('#gT').value.trim();if(k.length<20)return $('#gE2').textContent='Cole o token completo.';
+    const txt=`window.CFG={repo:${JSON.stringify(entradaRepo())},k:${JSON.stringify(btoa(k.split('').reverse().join('')))}};\n`;
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/javascript'}));a.download='config.js';a.click();
+    $('#gT').value='';toast('config.js gerado. Envie-o ao GitHub.');
+  };
+}
+async function telaClientes(){
+  const voltar=m=>{dlg.innerHTML=`<h2>Acesso dos clientes</h2><p class="err">${esc(m)}</p><div class="bar"><button id="cV">Voltar</button></div>`;$('#cV').onclick=ajustes};
+  if(!gh)return voltar('Este aparelho não está configurado para sincronizar.');
+  dlg.innerHTML='<h2>Acesso dos clientes</h2><p>Carregando…</p>';
+  let contas;
+  try{contas=(await lerClientes()).contas}catch(e){return voltar(msg(e))}
+  const est=c=>!c?'sem acesso':!c.ativo?'desativado':c.trocar?'senha padrão, aguardando o 1º acesso':'ativo';
+  dlg.innerHTML=`<h2>Acesso dos clientes</h2>
+  <p>O usuário é o nome da garagem. A senha inicial é o nome da garagem sem espaços + <b>@2026</b> (ex.: AutoBless@2026), e o cliente é obrigado a trocá-la no primeiro acesso.</p>
+  <div id="cl">${GAR.map(g=>{const c=contas.find(x=>norm(x.usuario)===norm(g));return `<div class="ur"><span><b>${esc(g)}</b> <small>${est(c)}</small></span><span>${!c?`<button class="ghost" data-c="criar" data-g="${esc(g)}">Criar acesso</button>`:`<button class="ghost" data-c="reset" data-g="${esc(g)}">Redefinir senha</button> <button class="ghost" data-c="onoff" data-g="${esc(g)}">${c.ativo?'Desativar':'Ativar'}</button>`}</span></div>`}).join('')}</div>
+  <p class="err" id="cE"></p><div class="bar"><button class="ghost" id="cV">Voltar</button><button id="cG">Gerar config.js da página do cliente</button></div>`;
+  $('#cV').onclick=ajustes;$('#cG').onclick=geraConfig;
+  $('#cl').onclick=async e=>{
+    const b=e.target.closest('[data-c]');if(!b)return;const g=b.dataset.g,ac=b.dataset.c;b.disabled=true;
+    try{
+      await mudaClientes(async cs=>{
+        const c=cs.find(x=>norm(x.usuario)===norm(g));
+        if(ac==='onoff'){if(c){c.ativo=!c.ativo;c.at=Date.now()}return}
+        const hash=await mkHashCli(senhaPadraoCli(g));
+        if(c){c.hash=hash;c.trocar=true;c.ativo=true;c.at=Date.now()}else cs.push({usuario:g,ativo:true,trocar:true,hash,at:Date.now()});
+      });
+      reg('—',ac==='criar'?'Acesso de cliente criado':ac==='reset'?'Senha de cliente redefinida':'Acesso de cliente alterado','','',g);save();
+      telaClientes();
+    }catch(er){b.disabled=false;$('#cE').textContent='Não foi possível gravar: '+msg(er)}
+  };
 }
 function telaUsuarios(){
   const us=cfg.users.filter(u=>!u.removido).sort((a,b)=>a.nome.localeCompare(b.nome));
@@ -829,6 +941,7 @@ function editaUsuario(id){
     if(!nome)return $('#eE').textContent='Informe o nome.';
     if(cfg.users.some(x=>!x.removido&&x.id!==id&&norm(x.nome)===norm(nome)))return $('#eE').textContent='Já existe um usuário com este nome.';
     const perms=Object.fromEntries([...dlg.querySelectorAll('[data-p]')].map(c=>[c.dataset.p,c.checked]));
+    if(perms.propria&&!$('#eG').value)return $('#eE').textContent='Escolha a garagem deste usuário: a permissão "só a própria garagem" depende dela.';
     if(id)Object.assign(u,{nome,garagem:$('#eG').value,ativo:$('#eA').checked,perms,at:Date.now()});
     else cfg.users.push({id:'u_'+norm(nome)+'_'+Date.now().toString(36),nome,garagem:$('#eG').value,ativo:$('#eA').checked,trocar:true,perms,hash:await mkHash(inicial(nome)),at:Date.now()});
     reg('—',id?'Usuário alterado':'Usuário criado','','',nome);save();

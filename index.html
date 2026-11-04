@@ -328,7 +328,7 @@ $('#grid').addEventListener('change',e=>{
   if(!o||!can('status')||!podeNaOS(o)){render();return}
   if(s.value==='concluido'){if(can('finalizar'))finalizar(o.os);else render();return}
   const de=o.status,para=s.value;
-  motivo('Alterar status de '+o.os,m=>{o.status=para;delete o.fechamento;reg(o.os,'Status',ST[de],ST[para],m);save()})});
+  motivo('Alterar status de '+o.os,m=>{o.status=para;o.stAt=Date.now();delete o.fechamento;reg(o.os,'Status',ST[de],ST[para],m);save()})});
 $('#graf').addEventListener('click',e=>{const b=e.target.closest('[data-w]');if(b){ano+=+b.dataset.w;render()}});
 $('#sum').addEventListener('click',e=>{const b=e.target.closest('[data-cor]');if(b){corSel=corSel===b.dataset.cor?null:b.dataset.cor;render()}});
 $('#fSit').onchange=render;
@@ -357,7 +357,7 @@ function finalizar(n){
     if(!tt.length){$('#er').textContent='Marque pelo menos um técnico.';return}
     if(m.length<3){$('#er').textContent='Escreva o motivo.';return}
     const de=o.status;
-    Object.assign(o,{status:'concluido',fechamento:'manual',tecnicos:tt,obs:$('#obs').value.trim()});
+    Object.assign(o,{status:'concluido',stAt:Date.now(),fechamento:'manual',tecnicos:tt,obs:$('#obs').value.trim()});
     reg(o.os,jaFin?'Finalização editada':'Finalizada',ST[de],'Concluído · técnicos: '+tt.join(', '),m);save();dlg.close()};
 }
 
@@ -609,7 +609,7 @@ const validaSol=(s,cod)=>!!s&&s.os===cod&&/^[A-Z0-9]{17}$/.test(String(s.vin||''
 function incorpora(s,tm){
   const dh=String(s.dataHora||''),gi=s.garagem?garagem(s.garagem):'';
   const g=gi||((data.find(o=>norm(o.frota)===norm(s.prefixo)||(s.vin&&o.vin===s.vin))||{}).cliente)||'Cliente (sem garagem)';
-  data.push({os:s.os,cliente:g,frota:String(s.prefixo||''),km:String(s.km??''),abertura:dataBR(dh),hora:dh.slice(11,16),vin:String(s.vin||''),placa:'',desc:String(s.motivo||''),status:'aguardando',tecnicos:[],obs:'',origem:'cliente',solicitante:String(s.nome||''),at:tm});
+  data.push({os:s.os,cliente:g,frota:String(s.prefixo||''),km:String(s.km??''),abertura:dataBR(dh),hora:dh.slice(11,16),vin:String(s.vin||''),placa:'',desc:String(s.motivo||''),status:'aguardando',tecnicos:[],obs:'',origem:'cliente',solicitante:String(s.nome||''),conta:String(s.garagem||''),stAt:tm,at:tm});
   if(cfg&&!cfg.log.some(x=>x.id==='sol-'+s.os))cfg.log.push({id:'sol-'+s.os,t:Date.parse(s.recebidoEm)||tm,u:'Cliente: '+(s.nome||'—'),uid:'',os:s.os,ac:'OS aberta pelo cliente',de:'',para:'Frota '+s.prefixo,mot:String(s.motivo||'').slice(0,300)});
 }
 const dirGh=async(repo,p)=>{const r=await fetch(`https://api.github.com/repos/${repo}/contents/${p}?t=${Date.now()}`,{headers:gHd()});return{status:r.status,arr:r.ok?await r.json():[]}};
@@ -644,6 +644,28 @@ async function importaSolicitacoes(){
   try{localStorage.setItem('osbyd.cur',falhou&&falhou<ultimo?falhou:ultimo);localStorage.setItem('osbyd.ign',JSON.stringify([...ignorados]))}catch(e){}
   return n;
 }
+// ---------- status das OS dos clientes: o painel publica (sem dados internos) para a página abrir.html ----------
+const cartaoPub=o=>({os:o.os,status:o.status,prefixo:o.frota,vin:o.vin,km:o.km,abertura:o.abertura,hora:o.hora||'',solicitante:o.solicitante||'',motivo:o.desc,desde:o.stAt||o.at||0});
+async function publicaStatus(){
+  if(!gh)return;
+  const repo=entradaRepo(),grupos={};
+  data.filter(o=>o.origem==='cliente').forEach(o=>{const k=norm(o.conta||garagem(o.cliente));if(k)(grupos[k]??=[]).push(o)});
+  let pub={};try{pub=JSON.parse(localStorage.getItem('osbyd.pub')||'{}')}catch(e){}
+  for(const [k,l] of Object.entries(grupos)){
+    const corpo=JSON.stringify({os:l.slice().sort((a,b)=>String(b.os).localeCompare(String(a.os))).map(cartaoPub)});
+    const marca=String(h53(corpo));
+    if(pub[k]===marca)continue;
+    const url=`https://api.github.com/repos/${repo}/contents/status/${k}.json`;
+    const r=await fetch(url+'?t='+Date.now(),{headers:gHd()});
+    let sha=null;
+    if(r.ok){const j=await r.json();sha=j.sha;if(dec(j.content)===corpo){pub[k]=marca;continue}}
+    else if(r.status!==404)continue;
+    const body={message:'Status das OS de '+k,content:enc(corpo)};if(sha)body.sha=sha;
+    const w=await fetch(url,{method:'PUT',headers:{...gHd(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(w.ok)pub[k]=marca;
+  }
+  try{localStorage.setItem('osbyd.pub',JSON.stringify(pub))}catch(e){}
+}
 async function sync(){
   if(!gh)return;
   if(sincronizando){denovo=true;return}
@@ -666,6 +688,7 @@ async function sync(){
     if(usuario){const nu=cfg.users.find(x=>x.id===usuario.id);if(!nu||!nu.ativo||nu.removido){sincronizando=false;return sai()}usuario=nu;applyUI()}else fillLogin();
     fillTec();setSync(hora());
     const ae=document.activeElement;if(!(ae&&ae.closest&&ae.closest('#grid')))render();
+    try{await publicaStatus()}catch(e){}
   }catch(e){
     setSync('Sem sincronização ('+msg(e)+'). Alterações salvas neste aparelho; tentando de novo em 30 s…',1);
     clearTimeout(tRetry);tRetry=setTimeout(sync,30000);

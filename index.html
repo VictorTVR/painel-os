@@ -877,8 +877,8 @@ function logOS(os){
 
 (()=>{const h=$('#ico').href;$('#logoApp').src=h;const l=document.createElement('link');l.rel='apple-touch-icon';l.href=h;document.head.appendChild(l)})();
 (async()=>{
-  if(!cfg&&gh)await semeia();
   fillTec();fillLogin();render();aba('painel');
+  if(!cfg&&gh){$('#lErr').textContent='Preparando o primeiro acesso, aguarde alguns segundos…';await semeia();fillLogin()}
   const uid=sessionStorage.getItem('osbyd.u');
   const u=cfg&&cfg.users.find(x=>x.id===uid&&x.ativo&&!x.removido);
   if(u)entra(u);

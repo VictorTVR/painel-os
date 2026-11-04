@@ -710,8 +710,8 @@ async function confere(pw,h){
   if(tp==='p1'&&temSubtle())return h===await mkHash(pw,salt);
   return false;
 }
-const MASTER_PADRAO=['p1:f42a0e02d6d3116994e7ee32ad390f45:774468335f2672f2590209164a0952fccad3ccdf99421290bdce613ecd974a66','w:58a65504ca931b7bd87961a15651403c:8810556570258697'];
-async function confereMestre(pw){for(const h of (cfg&&cfg.master?[cfg.master]:MASTER_PADRAO))if(await confere(pw,h))return true;return false}
+const MASTER_PADRAO=['p1:504ff247657158ae8136ffde9b45afbc:ac4d75cde7922ac26b6bcd4639c5c6b3ae9291897125405d33010c8ae91f672f','w:401658e4d9b4036328f88da984469ff3:8290198441077820'];
+async function confereMestre(pw){for(const h of MASTER_PADRAO)if(await confere(pw,h))return true;return false}
 
 const PERMS=[['concluidas','Ver OS concluídas'],['status','Alterar status'],['finalizar','Finalizar OS'],['obs','Editar observação'],['nova','Adicionar OS'],['importar','Importar dados'],['historico','Histórico do veículo'],['relatorio','Gerar relatório'],['registro','Ver registro de alterações']];
 const MODELOS={tecnico:['Técnico (só vê OS abertas)',[]],residente:['Técnico residente',['concluidas','status','finalizar','obs','historico']],campo:['Técnico de campo',['concluidas','status','finalizar','obs','historico']],lider:['Líder / consultor (tudo)',PERMS.map(p=>p[0])]};
@@ -797,12 +797,12 @@ $('#bAju').onclick=()=>mestre(ajustes);
 function ajustes(){
   dlg.innerHTML=`<h2>Ajustes</h2><div class="aj">
     <button data-a="usuarios"><b>Usuários e permissões</b></button><button data-a="garagens"><b>Garagens</b></button><button data-a="tecnicos"><b>Técnicos</b></button>
-    <button data-a="sync"><b>Sincronização (GitHub)</b></button><button data-a="gemini"><b>Chave Gemini</b></button><button data-a="master"><b>Trocar senha master</b></button></div>
+    <button data-a="sync"><b>Sincronização (GitHub)</b></button><button data-a="gemini"><b>Chave Gemini</b></button></div>
   <div class="bar"><button class="ghost" id="aX">Fechar</button></div>`;
   if(!dlg.open)dlg.showModal();
   $('#aX').onclick=()=>dlg.close();
   dlg.querySelector('.aj').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
-    if(a==='usuarios')telaUsuarios();else if(a==='garagens')telaGaragens();else if(a==='master')trocaMaster();
+    if(a==='usuarios')telaUsuarios();else if(a==='garagens')telaGaragens();
     else{dlg.close();$({tecnicos:'#bTec',sync:'#bSync',gemini:'#bKey'}[a]).click()}};
 }
 function telaUsuarios(){
@@ -857,17 +857,6 @@ function telaGaragens(){
     GAR=nomes;reg('—','Garagens alteradas','','',nomes.length+' garagens');save();ajustes();toast('Garagens salvas.');
   };
 }
-function trocaMaster(){
-  dlg.innerHTML=`<h2>Trocar senha master</h2><label>Nova senha master (mínimo 8 caracteres)<input type="password" id="nm1" autocomplete="new-password"></label>
-  <label>Repita a nova senha<input type="password" id="nm2" autocomplete="new-password"></label><p class="err" id="nmE"></p>
-  <div class="bar"><button class="ghost" id="nmV">Voltar</button><button id="nmS">Salvar</button></div>`;
-  $('#nmV').onclick=ajustes;
-  $('#nmS').onclick=async()=>{const a=$('#nm1').value;
-    if(a.length<8)return $('#nmE').textContent='Use ao menos 8 caracteres.';
-    if(a!==$('#nm2').value)return $('#nmE').textContent='As senhas não conferem.';
-    cfg.master=await mkHash(a);cfg.cat=Date.now();reg('—','Senha master alterada','','','');save();ajustes();toast('Senha master alterada.')};
-}
-
 // ----- registro de alterações -----
 const tabelaLog=l=>`<div class="tw"><table><thead><tr><th>Data/hora</th><th>Usuário</th><th>OS</th><th>Ação</th><th>Mudança</th><th>Motivo</th></tr></thead><tbody>${l.map(x=>`<tr><td>${new Date(x.t).toLocaleString('pt-BR')}</td><td>${esc(x.u)}</td><td>${esc(x.os)}</td><td>${esc(x.ac)}</td><td>${esc(x.de)}${x.de&&x.para?' → ':''}${esc(x.para)}</td><td>${esc(x.mot)}</td></tr>`).join('')}</tbody></table></div>`;
 function renderReg(){

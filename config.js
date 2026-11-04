@@ -1,0 +1,1 @@
+window.CFG={repo:"VictorTVR/painel-os-entrada",k:"c3dPSnJkVDhPRTZQTDZZT2hCV2FDYXpXZnRGdU1FcUxXcDVMMHZZYTc0WWhOTkp3Q0VqejJoMnVUTmxfcUpkS0tpMjA0WjREMFlGQjQ2NkExMV90YXBfYnVodGln"};
